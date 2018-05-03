@@ -1,11 +1,9 @@
 package main
 
 import (
-	"fmt"
 	"gopkg.in/yaml.v2"
 	"io/ioutil"
 	"os"
-	//"strconv"
 	"time"
 )
 
@@ -14,14 +12,14 @@ type Task struct {
 	Status      string
 	CreatedAt   time.Time
 	ClosedAt    time.Time
-	tasklist *TaskList
-	next *Task
-	prev *Task
+	tasklist    *TaskList
+	next        *Task
+	prev        *Task
 }
 
 type TaskList struct {
-	first *Task
-	last *Task
+	first  *Task
+	last   *Task
 	length int
 }
 
@@ -160,14 +158,4 @@ func (tasklist *TaskList) Save(path string) error {
 	}
 
 	return err
-}
-
-func main() {
-	tasklist := &TaskList{}
-	tasklist.Load("test.yml")
-
-
-	for t := tasklist.First(); t != nil; t = t.Next() {
-		fmt.Println(t.Description)
-	}
 }

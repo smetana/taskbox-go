@@ -22,7 +22,7 @@ func (tasklist *TaskList) toString() string {
 	return s.String()
 }
 
-func fixture() *TaskList {
+func tasklistFixture() *TaskList {
 	tl := &TaskList{}
 	data := []string{"Foo", "Bar", "Baz"}
 	for _, s := range data {
@@ -34,7 +34,7 @@ func fixture() *TaskList {
 // ----------------------------------------------------------------------------
 
 func TestAppend(t *testing.T) {
-	tl := fixture()
+	tl := tasklistFixture()
 	assert.Equal(t, tl.Length(), 3)
 	assert.Equal(t, tl.toString(), `
 Foo
@@ -44,7 +44,7 @@ Baz
 }
 
 func TestInsert(t *testing.T) {
-	tl := fixture();
+	tl := tasklistFixture()
 	task := tl.First().Next()
 	task.InsertAfter(&Task{Description: "Qux", Status: "Open"})
 	task.InsertBefore(&Task{Description: "Xyz", Status: "Open"})
@@ -62,7 +62,7 @@ func TestSaveLoad(t *testing.T) {
 	file, _ := ioutil.TempFile("", "test.yml")
 	defer os.Remove(file.Name())
 
-	tl1 := fixture()
+	tl1 := tasklistFixture()
 	assert.Equal(t, tl1.toString(), `
 Foo
 Bar
@@ -81,7 +81,7 @@ Baz
 }
 
 func TestDelete(t *testing.T) {
-	tl := fixture();
+	tl := tasklistFixture()
 	assert.Equal(t, tl.Length(), 3)
 	task := tl.First().Next()
 	task.InsertAfter(&Task{Description: "Qux", Status: "Open"})
