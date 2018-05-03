@@ -16,8 +16,8 @@ import (
 func (tasklist *TaskList) toString() string {
 	var s strings.Builder
 	fmt.Fprintf(&s, "\n")
-	for e := tasklist.Front(); e != nil; e = e.Next() {
-		fmt.Fprintf(&s, "%s\n", e.Value.(Task).Description)
+	for t := tasklist.First(); t != nil; t = t.Next() {
+		fmt.Fprintf(&s, "%s\n", t.Description)
 	}
 	return s.String()
 }
@@ -26,7 +26,7 @@ func fixture() *TaskList {
 	tl := &TaskList{}
 	data := []string{"Foo", "Bar", "Baz"}
 	for _, s := range data {
-		tl.PushBack(Task{Description: s, Status: "Open"})
+		tl.Append(&Task{Description: s, Status: "Open"})
 	}
 	return tl
 }
@@ -35,6 +35,7 @@ func fixture() *TaskList {
 
 func TestAppend(t *testing.T) {
 	tl := fixture()
+	assert.Equal(t, tl.Length(), 3)
 	assert.Equal(t, tl.toString(), `
 Foo
 Bar
@@ -44,9 +45,10 @@ Baz
 
 func TestInsert(t *testing.T) {
 	tl := fixture();
-	e := tl.Front().Next()
-	tl.InsertAfter(Task{Description: "Qux", Status: "Open"}, e)
-	tl.InsertBefore(Task{Description: "Xyz", Status: "Open"}, e)
+	task := tl.First().Next()
+	task.InsertAfter(&Task{Description: "Qux", Status: "Open"})
+	task.InsertBefore(&Task{Description: "Xyz", Status: "Open"})
+	assert.Equal(t, tl.Length(), 5)
 	assert.Equal(t, tl.toString(), `
 Foo
 Xyz
@@ -76,5 +78,20 @@ Foo
 Bar
 Baz
 `)
+}
 
+func TestDelete(t *testing.T) {
+	tl := fixture();
+	assert.Equal(t, tl.Length(), 3)
+	task := tl.First().Next()
+	task.InsertAfter(&Task{Description: "Qux", Status: "Open"})
+	assert.Equal(t, tl.Length(), 4)
+	task.Delete()
+	assert.Equal(t, tl.Length(), 3)
+	assert.Equal(t, tl.toString(), `
+Foo
+Qux
+Baz
+`)
+	assert.Equal(t, task.Description, "Bar")
 }
