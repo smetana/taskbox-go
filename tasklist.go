@@ -12,6 +12,7 @@ type Task struct {
 	Status      string
 	CreatedAt   time.Time
 	ClosedAt    time.Time
+	ReopenAt    time.Time
 	tasklist    *TaskList
 	next        *Task
 	prev        *Task
@@ -21,6 +22,10 @@ type TaskList struct {
 	first  *Task
 	last   *Task
 	length int
+}
+
+func (task *Task) IsClosed() bool {
+	return task.Status == "Closed"
 }
 
 func (task *Task) Next() *Task {

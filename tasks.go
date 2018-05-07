@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"github.com/nsf/termbox-go"
 	"os"
-	"strconv"
+	"strings"
 )
 
 func check(e error) {
@@ -44,14 +44,25 @@ func (tv *TaskView) render() {
 	w, h := termbox.Size()
 	tv.w = int(w/2) - 3 // " > * Description"
 	tv.h = h - 5        // minus title, help line, and margins
-	x0, y0 := 3, 3      // tasklist position
+	tv.x = 3
+	tv.y = 3
 
-	printStrAt(1, 1, tv.w, "Tasks ("+strconv.Itoa(len(tv.Tasks))+")", 0, 0)
+	var b strings.Builder
+
+	fmt.Fprintf(&b, "%s Tasks(%d)", tv.filter, len(tv.Tasks))
+	printStrAt(1, 1, tv.w, b.String(), 0, 0)
+
+	var prefix string
 	for i, t := range tv.Page() {
-		printStrAt(0+x0, i+y0, tv.w, "• "+t.Description, 0, 0)
+		if t.IsClosed() {
+			prefix = "C"
+		} else {
+			prefix = "•"
+		}
+		printStrAt(0+tv.x, i+tv.y, tv.w, prefix+" "+t.Description, 0, 0)
 	}
 	// Cursor
-	printStrAt(x0-2, y0+tv.CursorToPage(), 1, ">", 0, 0)
+	printStrAt(tv.x-2, tv.CursorToY(), 1, ">", 0, 0)
 	termbox.Flush()
 }
 
@@ -60,24 +71,37 @@ func (tv *TaskView) mainLoop() {
 		ev := termbox.PollEvent()
 		switch ev.Type {
 		case termbox.EventKey:
-			switch ev.Key {
-			case termbox.KeyArrowDown:
+			switch {
+			case ev.Key == termbox.KeyArrowDown:
 				tv.CursorDown()
-			case termbox.KeyArrowUp:
+			case ev.Key == termbox.KeyArrowUp:
 				tv.CursorUp()
-			case termbox.KeyPgdn:
+			case ev.Key == termbox.KeyPgdn:
 				tv.PageDown()
-			case termbox.KeyPgup:
+			case ev.Key == termbox.KeyPgup:
 				tv.PageUp()
+			case ev.Key == termbox.KeyInsert || ev.Ch == 'i':
+				tv.InsertTaskBefore()
+			case ev.Ch == 'a':
+				tv.InsertTaskAfter()
+			case ev.Key == termbox.KeyEnter || ev.Ch == 'e':
+				tv.EditTask()
+			case ev.Key == termbox.KeyDelete || ev.Ch == 'd':
+				tv.DeleteTask()
+			case ev.Ch == 'c':
+				tv.CloseTask()
+			case ev.Ch == 'o':
+				tv.ReopenTask()
+			case ev.Ch == 'C':
+				tv.Filter("Closed")
+			case ev.Ch == 'O':
+				tv.Filter("Open")
+			case ev.Ch == 'A':
+				tv.Filter("All")
+			case ev.Key == termbox.KeyEsc || ev.Ch == 'q':
+				return // Quit
 			default:
-				if ev.Ch != 0 {
-					switch ev.Ch {
-					case 'q', 'Q':
-						return // Quit
-					default:
-						// do nothing
-					}
-				}
+				// do nothing
 			}
 		case termbox.EventError:
 			panic(ev.Err)
@@ -104,9 +128,11 @@ func main() {
 
 	startTermbox()
 	tv := NewTaskView(tasklist)
-
+	tv.Filter("Open")
 	tv.render()
 	tv.mainLoop()
 
 	termbox.Close()
+	err = tasklist.Save(filename)
+	check(err)
 }
