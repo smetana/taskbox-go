@@ -1,9 +1,5 @@
 package main
 
-import (
-	"github.com/nsf/termbox-go"
-)
-
 type TaskView struct {
 	tasklist       *TaskList
 	Tasks          []*Task
@@ -15,7 +11,6 @@ type TaskView struct {
 func NewTaskView(tasklist *TaskList) *TaskView {
 	tv := new(TaskView)
 	tv.tasklist = tasklist
-	tv.SetSize()
 	tv.Filter("All")
 	return tv
 }
@@ -34,12 +29,6 @@ func (tv *TaskView) Filter(status string) {
 	tv.scroll = 0
 	tv.filter = status
 	tv.calculate()
-}
-
-func (tv *TaskView) SetSize() {
-	w, h := termbox.Size()
-	tv.w = int(w/2) - 3 // " > * Description"
-	tv.h = h - 5        // minus title, help line, and margins
 }
 
 func (tv *TaskView) scrollToCursor() {

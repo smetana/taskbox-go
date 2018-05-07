@@ -5,12 +5,20 @@ import (
 	"fmt"
 	"github.com/nsf/termbox-go"
 	"os"
+	"strconv"
 )
 
 func check(e error) {
 	if e != nil {
 		panic(e)
 	}
+}
+
+func startTermbox() {
+	err := termbox.Init()
+	check(err)
+	termbox.SetInputMode(termbox.InputEsc)
+	termbox.HideCursor()
 }
 
 func printStrAt(x, y, w int, s string, fg, bg termbox.Attribute) {
@@ -29,11 +37,53 @@ func printStrAt(x, y, w int, s string, fg, bg termbox.Attribute) {
 	}
 }
 
-func startTermbox() {
-	err := termbox.Init()
-	check(err)
-	termbox.SetInputMode(termbox.InputEsc)
-	termbox.HideCursor()
+func (tv *TaskView) render() {
+	termbox.Clear(termbox.ColorDefault, termbox.ColorDefault)
+
+	// TODO Optimization: Move block below to separate event
+	w, h := termbox.Size()
+	tv.w = int(w/2) - 3 // " > * Description"
+	tv.h = h - 5        // minus title, help line, and margins
+	x0, y0 := 3, 3      // tasklist position
+
+	printStrAt(1, 1, tv.w, "Tasks ("+strconv.Itoa(len(tv.Tasks))+")", 0, 0)
+	for i, t := range tv.Page() {
+		printStrAt(0+x0, i+y0, tv.w, "• "+t.Description, 0, 0)
+	}
+	// Cursor
+	printStrAt(x0-2, y0+tv.CursorToPage(), 1, ">", 0, 0)
+	termbox.Flush()
+}
+
+func (tv *TaskView) mainLoop() {
+	for {
+		ev := termbox.PollEvent()
+		switch ev.Type {
+		case termbox.EventKey:
+			switch ev.Key {
+			case termbox.KeyArrowDown:
+				tv.CursorDown()
+			case termbox.KeyArrowUp:
+				tv.CursorUp()
+			case termbox.KeyPgdn:
+				tv.PageDown()
+			case termbox.KeyPgup:
+				tv.PageUp()
+			default:
+				if ev.Ch != 0 {
+					switch ev.Ch {
+					case 'q', 'Q':
+						return // Quit
+					default:
+						// do nothing
+					}
+				}
+			}
+		case termbox.EventError:
+			panic(ev.Err)
+		}
+		tv.render()
+	}
 }
 
 func main() {
@@ -53,15 +103,10 @@ func main() {
 	check(err)
 
 	startTermbox()
-	view := NewTaskView(tasklist)
+	tv := NewTaskView(tasklist)
 
-	w, _ := termbox.Size()
-	for i, t := range view.Tasks {
-		printStrAt(0, i, w, t.Description, 0, 0)
-	}
-	termbox.Flush()
+	tv.render()
+	tv.mainLoop()
 
-	termbox.PollEvent()
 	termbox.Close()
-
 }
