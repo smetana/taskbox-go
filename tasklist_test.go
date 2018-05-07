@@ -33,7 +33,7 @@ func tasklistFixture() *TaskList {
 
 // ----------------------------------------------------------------------------
 
-func TestAppend(t *testing.T) {
+func TestTLAppend(t *testing.T) {
 	tl := tasklistFixture()
 	assert.Equal(t, tl.Length(), 3)
 	assert.Equal(t, tl.toString(), `
@@ -43,7 +43,7 @@ Baz
 `)
 }
 
-func TestInsert(t *testing.T) {
+func TestTLInsert(t *testing.T) {
 	tl := tasklistFixture()
 	task := tl.First().Next()
 	task.InsertAfter(&Task{Description: "Qux", Status: "Open"})
@@ -58,7 +58,7 @@ Baz
 `)
 }
 
-func TestSaveLoad(t *testing.T) {
+func TestTLSaveLoad(t *testing.T) {
 	file, _ := ioutil.TempFile("", "test.yml")
 	defer os.Remove(file.Name())
 
@@ -80,7 +80,7 @@ Baz
 `)
 }
 
-func TestDelete(t *testing.T) {
+func TestTLDelete(t *testing.T) {
 	tl := tasklistFixture()
 	assert.Equal(t, tl.Length(), 3)
 	task := tl.First().Next()

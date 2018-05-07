@@ -77,7 +77,14 @@ func (tv *TaskView) pageToString() string {
 
 // ----------------------------------------------------------------------------
 
-func TestNew(t *testing.T) {
+func TestTVNew(t *testing.T) {
+	tl := &TaskList{}
+	tv := NewTaskView(tl)
+	assert.Equal(t, tv.cursor, 0)
+	assert.True(t, tv.SelectedTask() == nil)
+}
+
+func TestTVAppend(t *testing.T) {
 	tv := tvFixture(3)
 	assert.Equal(t, tv.toString(), `
  0 Open   foo
@@ -86,7 +93,7 @@ func TestNew(t *testing.T) {
 `)
 }
 
-func TestInsertAndFilter(t *testing.T) {
+func TestTVInsertAndFilter(t *testing.T) {
 	tv := tvFixture(3)
 	task := tv.Tasks[1]
 	task.InsertBefore(&Task{Description: "qux", Status: "Closed"})
@@ -112,7 +119,7 @@ func TestInsertAndFilter(t *testing.T) {
 `)
 }
 
-func TestScrollingAndPaging(t *testing.T) {
+func TestTVScrollingAndPaging(t *testing.T) {
 	tv := tvFixture(22)
 	tv.h = 5
 	assert.Equal(t, tv.cursor, 0)
