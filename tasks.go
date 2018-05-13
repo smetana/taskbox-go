@@ -4,6 +4,7 @@ import (
 	"flag"
 	"fmt"
 	"github.com/nsf/termbox-go"
+	"github.com/smetana/editbox-go"
 	"os"
 	"strings"
 )
@@ -21,22 +22,6 @@ func startTermbox() {
 	termbox.HideCursor()
 }
 
-func printStrAt(x, y, w int, s string, fg, bg termbox.Attribute) {
-	// We cannot rely on range index because in UTF-8 string
-	// it shows byte position, not rune position
-	i := -1
-	for _, r := range s {
-		i++
-		if i >= w {
-			break
-		}
-		termbox.SetCell(x+i, y, r, fg, bg)
-	}
-	for i = i + 1; i < w; i++ {
-		termbox.SetCell(x+i, y, ' ', fg, bg)
-	}
-}
-
 func (tv *TaskView) render() {
 	termbox.Clear(termbox.ColorDefault, termbox.ColorDefault)
 
@@ -50,7 +35,7 @@ func (tv *TaskView) render() {
 	var b strings.Builder
 
 	fmt.Fprintf(&b, "%s Tasks(%d)", tv.filter, len(tv.Tasks))
-	printStrAt(1, 1, tv.w, b.String(), 0, 0)
+	editbox.Label(1, 1, 0, 0, 0, b.String())
 
 	var prefix string
 	for i, t := range tv.Page() {
@@ -59,10 +44,10 @@ func (tv *TaskView) render() {
 		} else {
 			prefix = "•"
 		}
-		printStrAt(0+tv.x, i+tv.y, tv.w, prefix+" "+t.Description, 0, 0)
+		editbox.Label(0+tv.x, i+tv.y, tv.w, 0, 0, prefix+" "+t.Description)
 	}
 	// Cursor
-	printStrAt(tv.x-2, tv.CursorToY(), 1, ">", 0, 0)
+	editbox.Label(tv.x-2, tv.CursorToY(), 0, 0, 0, ">")
 	termbox.Flush()
 }
 
