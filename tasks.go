@@ -27,9 +27,9 @@ func (tv *TaskView) render() {
 
 	// TODO Optimization: Move block below to separate event
 	w, h := termbox.Size()
-	tv.w = int(w/2) - 3 // " > * Description"
+	tv.w = int(w/2) - 2 // minus padding
 	tv.h = h - 5        // minus title, help line, and margins
-	tv.x = 3
+	tv.x = 1
 	tv.y = 3
 
 	var b strings.Builder
@@ -38,16 +38,20 @@ func (tv *TaskView) render() {
 	editbox.Label(1, 1, 0, 0, 0, b.String())
 
 	var prefix string
+	var fg, bg termbox.Attribute
 	for i, t := range tv.Page() {
 		if t.IsClosed() {
-			prefix = "C"
+			prefix = "C "
 		} else {
-			prefix = "•"
+			prefix = "• "
 		}
-		editbox.Label(0+tv.x, i+tv.y, tv.w, 0, 0, prefix+" "+t.Description)
+		if i == tv.CursorToPage() {
+			fg, bg = 0|termbox.AttrReverse, 0|termbox.AttrReverse
+		} else {
+			fg, bg = 0, 0
+		}
+		editbox.Label(0+tv.x, i+tv.y, tv.maxTaskW, fg, bg, prefix+t.Description)
 	}
-	// Cursor
-	editbox.Label(tv.x-2, tv.CursorToY(), 0, 0, 0, ">")
 	termbox.Flush()
 }
 

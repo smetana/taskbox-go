@@ -12,6 +12,7 @@ type TaskView struct {
 	filter         string
 	x, y           int
 	w, h           int
+	maxTaskW       int
 	cursor, scroll int
 }
 
@@ -24,9 +25,13 @@ func NewTaskView(tasklist *TaskList) *TaskView {
 
 func (tv *TaskView) calculate() {
 	tv.Tasks = make([]*Task, 0)
+	tv.maxTaskW = 0
 	for t := tv.tasklist.First(); t != nil; t = t.Next() {
 		if tv.filter == "All" || t.Status == tv.filter {
 			tv.Tasks = append(tv.Tasks, t)
+			if len(t.Description) > tv.maxTaskW {
+				tv.maxTaskW = len(t.Description)
+			}
 		}
 	}
 	if len(tv.Tasks) == 0 {
@@ -132,7 +137,8 @@ func (tv *TaskView) DeleteTask() {
 func (tv *TaskView) EditTask() (*Task, termbox.Event) {
 	task := tv.SelectedTask()
 
-	input := editbox.Input(tv.x+2, tv.CursorToY(), tv.w, 0, 0)
+	input := editbox.Input(tv.x+2, tv.CursorToY(), tv.maxTaskW-3, // prefix
+		0|termbox.AttrReverse, 0|termbox.AttrReverse)
 	input.SetText(task.Description)
 	ev := input.WaitExit()
 
