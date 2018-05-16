@@ -22,6 +22,16 @@ func startTermbox() {
 	termbox.HideCursor()
 }
 
+func getCell(x, y int) termbox.Cell {
+	w, _ := termbox.Size()
+	buf := termbox.CellBuffer()
+	return buf[y*w+x]
+}
+
+func setCellColors(x, y int, fg, bg termbox.Attribute) {
+	termbox.SetCell(x, y, getCell(x, y).Ch, fg, bg)
+}
+
 func (tv *TaskView) render() {
 	termbox.Clear(termbox.ColorDefault, termbox.ColorDefault)
 
@@ -50,7 +60,7 @@ func (tv *TaskView) render() {
 		} else {
 			fg, bg = 0, 0
 		}
-		editbox.Label(0+tv.x, i+tv.y, tv.maxTaskW, fg, bg, prefix+t.Description)
+		editbox.Label(0+tv.x, i+tv.y, tv.maxTaskW+2, fg, bg, prefix+t.Description)
 	}
 	termbox.Flush()
 }
@@ -74,7 +84,12 @@ func (tv *TaskView) mainLoop() {
 			case ev.Ch == 'a':
 				tv.InsertTaskAfter()
 			case ev.Key == termbox.KeyEnter || ev.Ch == 'e':
-				tv.EditTask()
+				t := tv.SelectedTask()
+				if t != nil {
+					tv.EditTask()
+				} else {
+					tv.AppendTask()
+				}
 			case ev.Key == termbox.KeyDelete || ev.Ch == 'd':
 				tv.DeleteTask()
 			case ev.Ch == 'c':

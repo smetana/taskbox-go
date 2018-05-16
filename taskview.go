@@ -137,8 +137,12 @@ func (tv *TaskView) DeleteTask() {
 func (tv *TaskView) EditTask() (*Task, termbox.Event) {
 	task := tv.SelectedTask()
 
-	input := editbox.Input(tv.x+2, tv.CursorToY(), tv.maxTaskW-3, // prefix
-		0|termbox.AttrReverse, 0|termbox.AttrReverse)
+	// Remove invert colors from task prefix
+	for i := 0; i <= 3; i++ {
+		setCellColors(tv.x+i, tv.CursorToY(), 0, 0)
+	}
+
+	input := editbox.Input(tv.x+2, tv.CursorToY(), tv.w-3, 0, 0)
 	input.SetText(task.Description)
 	ev := input.WaitExit()
 
@@ -148,9 +152,11 @@ func (tv *TaskView) EditTask() (*Task, termbox.Event) {
 	} else {
 		task.Description = input.Text()
 	}
+
 	tv.calculate()
 	tv.render()
 	termbox.HideCursor()
+
 	return task, ev
 }
 
