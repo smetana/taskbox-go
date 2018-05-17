@@ -12,7 +12,6 @@ type TaskView struct {
 	filter         string
 	x, y           int
 	w, h           int
-	maxTaskW       int
 	cursor, scroll int
 }
 
@@ -25,13 +24,9 @@ func NewTaskView(tasklist *TaskList) *TaskView {
 
 func (tv *TaskView) calculate() {
 	tv.Tasks = make([]*Task, 0)
-	tv.maxTaskW = 0
 	for t := tv.tasklist.First(); t != nil; t = t.Next() {
 		if tv.filter == "All" || t.Status == tv.filter {
 			tv.Tasks = append(tv.Tasks, t)
-			if len(t.Description) > tv.maxTaskW {
-				tv.maxTaskW = len(t.Description)
-			}
 		}
 	}
 	if len(tv.Tasks) == 0 {
@@ -141,12 +136,7 @@ func (tv *TaskView) EditTask() (*Task, termbox.Event) {
 		return tv.AppendTask()
 	}
 
-	// Remove invert colors from task prefix
-	for i := 0; i <= 3; i++ {
-		setCellColors(tv.x+i, tv.CursorToY(), 0, 0)
-	}
-
-	input := editbox.Input(tv.x+2, tv.CursorToY(), tv.w-3, 0, 0)
+	input := editbox.Input(tv.x+4, tv.CursorToY(), tv.w-3, 0, 0)
 	input.SetText(task.Description)
 	ev := input.WaitExit()
 
@@ -205,6 +195,7 @@ func (tv *TaskView) CloseTask() {
 	task := tv.SelectedTask()
 	task.Status = "Closed"
 	task.ClosedAt = time.Now()
+	tv.calculate()
 }
 
 func (tv *TaskView) ReopenTask() {
@@ -212,4 +203,5 @@ func (tv *TaskView) ReopenTask() {
 	task.Status = "Open"
 	task.ClosedAt = time.Time{}
 	task.ReopenAt = time.Now()
+	tv.calculate()
 }

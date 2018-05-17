@@ -44,10 +44,10 @@ func reverseCellColors(x, y int) {
 
 func printHelp(y int) {
 	editbox.Label(0, 0, 0, 0, 0,
-		"menu  new  insert  append  edit  delete  close  reopen",
+		"menu  new  insert  after  edit  delete  close  reopen",
 	)
-	for _, x := range []int{1, 7, 12, 20, 28, 34, 42, 49} {
-		setCellColors(x-1, 0, 0|termbox.AttrBold, 0)
+	for _, x := range []int{1, 7, 12, 20, 27, 33, 41, 48} {
+		setCellColors(x-1, 0, 0|termbox.AttrUnderline, 0)
 	}
 }
 
@@ -67,20 +67,17 @@ func (tv *TaskView) render() {
 	editbox.Label(1, 2, 0, 0, 0, b.String())
 
 	var prefix string
-	var fg, bg termbox.Attribute
 	for i, t := range tv.Page() {
 		if t.IsClosed() {
 			prefix = "C "
 		} else {
-			prefix = "• "
+			prefix = "* "
 		}
-		if i == tv.CursorToPage() {
-			fg, bg = 0|termbox.AttrReverse, 0|termbox.AttrReverse
-		} else {
-			fg, bg = 0, 0
-		}
-		editbox.Label(0+tv.x, i+tv.y, tv.maxTaskW+2, fg, bg, prefix+t.Description)
+		editbox.Label(2+tv.x, i+tv.y, tv.w, 0, 0, prefix+t.Description)
 	}
+
+	// Cursor
+	editbox.Label(tv.x, tv.CursorToY(), 0, 0, 0, ">")
 
 	printHelp(h - 1)
 	termbox.Flush()
