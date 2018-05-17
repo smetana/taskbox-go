@@ -29,7 +29,26 @@ func getCell(x, y int) termbox.Cell {
 }
 
 func setCellColors(x, y int, fg, bg termbox.Attribute) {
-	termbox.SetCell(x, y, getCell(x, y).Ch, fg, bg)
+	cell := getCell(x, y)
+	termbox.SetCell(x, y, cell.Ch, fg, bg)
+}
+
+func reverseCellColors(x, y int) {
+	cell := getCell(x, y)
+	termbox.SetCell(
+		x, y, cell.Ch,
+		cell.Fg|termbox.AttrReverse,
+		cell.Bg|termbox.AttrReverse,
+	)
+}
+
+func printHelp(y int) {
+	editbox.Label(0, 0, 0, 0, 0,
+		"menu  new  insert  append  edit  delete  close  reopen",
+	)
+	for _, x := range []int{1, 7, 12, 20, 28, 34, 42, 49} {
+		setCellColors(x-1, 0, 0|termbox.AttrBold, 0)
+	}
 }
 
 func (tv *TaskView) render() {
@@ -40,12 +59,12 @@ func (tv *TaskView) render() {
 	tv.w = int(w/2) - 2 // minus padding
 	tv.h = h - 5        // minus title, help line, and margins
 	tv.x = 1
-	tv.y = 3
+	tv.y = 4
 
 	var b strings.Builder
 
 	fmt.Fprintf(&b, "%s Tasks(%d)", tv.filter, len(tv.Tasks))
-	editbox.Label(1, 1, 0, 0, 0, b.String())
+	editbox.Label(1, 2, 0, 0, 0, b.String())
 
 	var prefix string
 	var fg, bg termbox.Attribute
@@ -62,6 +81,8 @@ func (tv *TaskView) render() {
 		}
 		editbox.Label(0+tv.x, i+tv.y, tv.maxTaskW+2, fg, bg, prefix+t.Description)
 	}
+
+	printHelp(h - 1)
 	termbox.Flush()
 }
 
@@ -79,25 +100,49 @@ func (tv *TaskView) mainLoop() {
 				tv.PageDown()
 			case ev.Key == termbox.KeyPgup:
 				tv.PageUp()
-			case ev.Key == termbox.KeyInsert || ev.Ch == 'i':
+			case ev.Ch == 'n' ||
+				ev.Ch == 'N' ||
+				ev.Ch == 'т' ||
+				ev.Ch == 'Т':
+				tv.AppendTask()
+			case ev.Key == termbox.KeyInsert ||
+				ev.Ch == 'i' ||
+				ev.Ch == 'I' ||
+				ev.Ch == 'ш' ||
+				ev.Ch == 'Ш':
 				tv.InsertTaskBefore()
-			case ev.Ch == 'a':
+			case ev.Ch == 'a' ||
+				ev.Ch == 'A' ||
+				ev.Ch == 'ф' ||
+				ev.Ch == 'Ф':
 				tv.InsertTaskAfter()
-			case ev.Key == termbox.KeyEnter || ev.Ch == 'e':
+			case ev.Key == termbox.KeyEnter ||
+				ev.Ch == 'e' ||
+				ev.Ch == 'E' ||
+				ev.Ch == 'у' ||
+				ev.Ch == 'У':
 				tv.EditTask()
-			case ev.Key == termbox.KeyDelete || ev.Ch == 'd':
+			case ev.Key == termbox.KeyDelete ||
+				ev.Ch == 'd' ||
+				ev.Ch == 'D' ||
+				ev.Ch == 'в' ||
+				ev.Ch == 'В':
 				tv.DeleteTask()
-			case ev.Ch == 'c':
+			case ev.Ch == 'c' ||
+				ev.Ch == 'C' ||
+				ev.Ch == 'с' ||
+				ev.Ch == 'С':
 				tv.CloseTask()
-			case ev.Ch == 'o':
+			case ev.Ch == 'o' ||
+				ev.Ch == 'O' ||
+				ev.Ch == 'щ' ||
+				ev.Ch == 'Щ':
 				tv.ReopenTask()
-			case ev.Ch == 'C':
-				tv.Filter("Closed")
-			case ev.Ch == 'O':
-				tv.Filter("Open")
-			case ev.Ch == 'A':
-				tv.Filter("All")
-			case ev.Key == termbox.KeyEsc || ev.Ch == 'q':
+			case ev.Key == termbox.KeyEsc ||
+				ev.Ch == 'q' ||
+				ev.Ch == 'Q' ||
+				ev.Ch == 'й' ||
+				ev.Ch == 'Й':
 				return // Quit
 			default:
 				// do nothing
