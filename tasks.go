@@ -22,6 +22,10 @@ func startTermbox() {
 	termbox.HideCursor()
 }
 
+func clrscr() {
+	termbox.Clear(termbox.ColorDefault, termbox.ColorDefault)
+}
+
 func getCell(x, y int) termbox.Cell {
 	w, _ := termbox.Size()
 	buf := termbox.CellBuffer()
@@ -42,17 +46,32 @@ func reverseCellColors(x, y int) {
 	)
 }
 
-func printHelp(y int) {
-	editbox.Label(0, 0, 0, 0, 0,
-		"menu  new  insert  after  edit  delete  close  reopen",
-	)
-	for _, x := range []int{1, 7, 12, 20, 27, 33, 41, 48} {
-		setCellColors(x-1, 0, 0|termbox.AttrUnderline, 0)
+func printHelp(x, y int, s string) {
+	i := 0
+	shortcut := false
+	fg := termbox.ColorDefault
+	for _, r := range(s) {
+		if r == '_' {
+			shortcut = !shortcut
+		} else {
+			if shortcut {
+				fg = termbox.ColorDefault | termbox.AttrUnderline
+			} else {
+				fg = termbox.ColorDefault
+			}
+			termbox.SetCell(x + i, y, r, fg, 0)
+			i++
+		}
 	}
 }
 
+func confirm(msg string) bool {
+	clrscr()
+	return editbox.Confirm(1, 1, 0, 0, msg)
+}
+
 func (tv *TaskView) render() {
-	termbox.Clear(termbox.ColorDefault, termbox.ColorDefault)
+	clrscr()
 
 	// TODO Optimization: Move block below to separate event
 	w, h := termbox.Size()
@@ -79,7 +98,11 @@ func (tv *TaskView) render() {
 	// Cursor
 	editbox.Label(tv.x, tv.CursorToY(), 0, 0, 0, ">")
 
-	printHelp(h - 1)
+	printHelp(0, 0,
+		"_m_enu  _n_ew  _i_nsert  _a_fter  _e_dit  " +
+		"_d_elete  _c_lose  re_o_pen  _q_uit",
+	)
+
 	termbox.Flush()
 }
 
@@ -97,6 +120,14 @@ func (tv *TaskView) mainLoop() {
 				tv.PageDown()
 			case ev.Key == termbox.KeyPgup:
 				tv.PageUp()
+			case ev.Key == termbox.KeyEsc ||
+				ev.Ch == 'm' ||
+				ev.Ch == 'M' ||
+				ev.Ch == 'ь' ||
+				ev.Ch == 'Ь':
+				if !tv.ShowMenu() {
+					return
+				}
 			case ev.Ch == 'n' ||
 				ev.Ch == 'N' ||
 				ev.Ch == 'т' ||
@@ -124,7 +155,10 @@ func (tv *TaskView) mainLoop() {
 				ev.Ch == 'D' ||
 				ev.Ch == 'в' ||
 				ev.Ch == 'В':
-				tv.DeleteTask()
+				t := tv.SelectedTask()
+				if confirm("Delete \"" + t.Description + "\"?") {
+					tv.DeleteTask()
+				}
 			case ev.Ch == 'c' ||
 				ev.Ch == 'C' ||
 				ev.Ch == 'с' ||
@@ -135,8 +169,7 @@ func (tv *TaskView) mainLoop() {
 				ev.Ch == 'щ' ||
 				ev.Ch == 'Щ':
 				tv.ReopenTask()
-			case ev.Key == termbox.KeyEsc ||
-				ev.Ch == 'q' ||
+			case ev.Ch == 'q' ||
 				ev.Ch == 'Q' ||
 				ev.Ch == 'й' ||
 				ev.Ch == 'Й':

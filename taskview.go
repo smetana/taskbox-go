@@ -205,3 +205,31 @@ func (tv *TaskView) ReopenTask() {
 	task.ReopenAt = time.Now()
 	tv.calculate()
 }
+
+func (tv *TaskView) ShowMenu() bool {
+	clrscr()
+	menu := editbox.Select(
+		2, 2, 15, 10,
+		0, 0, 0|termbox.AttrReverse, 0|termbox.AttrReverse,
+		[]string{
+			"Open Tasks",
+			"Closed Tasks",
+			"All Tasks",
+			"",
+			"Quit",
+		},
+	)
+	menu.WaitExit()
+
+	switch menu.SelectedIndex() {
+	case 0:
+		tv.Filter("Open")
+	case 1:
+		tv.Filter("Closed")
+	case 2:
+		tv.Filter("All")
+	case 4:
+		return false
+	}
+	return true
+}
