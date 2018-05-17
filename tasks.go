@@ -84,12 +84,7 @@ func (tv *TaskView) mainLoop() {
 			case ev.Ch == 'a':
 				tv.InsertTaskAfter()
 			case ev.Key == termbox.KeyEnter || ev.Ch == 'e':
-				t := tv.SelectedTask()
-				if t != nil {
-					tv.EditTask()
-				} else {
-					tv.AppendTask()
-				}
+				tv.EditTask()
 			case ev.Key == termbox.KeyDelete || ev.Ch == 'd':
 				tv.DeleteTask()
 			case ev.Ch == 'c':

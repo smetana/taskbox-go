@@ -137,6 +137,10 @@ func (tv *TaskView) DeleteTask() {
 func (tv *TaskView) EditTask() (*Task, termbox.Event) {
 	task := tv.SelectedTask()
 
+	if task == nil {
+		return tv.AppendTask()
+	}
+
 	// Remove invert colors from task prefix
 	for i := 0; i <= 3; i++ {
 		setCellColors(tv.x+i, tv.CursorToY(), 0, 0)
@@ -160,23 +164,29 @@ func (tv *TaskView) EditTask() (*Task, termbox.Event) {
 	return task, ev
 }
 
-func (tv *TaskView) InsertTaskBefore() {
+func (tv *TaskView) InsertTaskBefore() (*Task, termbox.Event) {
+	task := tv.SelectedTask()
+
+	if task == nil {
+		return tv.AppendTask()
+	}
+
 	tv.SelectedTask().InsertBefore(tv.NewTask())
 	tv.calculate()
 	tv.render()
-	tv.EditTask()
+	return tv.EditTask()
 }
 
-func (tv *TaskView) InsertTaskAfter() {
+func (tv *TaskView) InsertTaskAfter() (*Task, termbox.Event) {
 	if tv.cursor == len(tv.Tasks)-1 {
-		tv.AppendTask()
+		return tv.AppendTask()
 	} else {
 		tv.CursorDown()
-		tv.InsertTaskBefore()
+		return tv.InsertTaskBefore()
 	}
 }
 
-func (tv *TaskView) AppendTask() {
+func (tv *TaskView) AppendTask() (*Task, termbox.Event) {
 	for {
 		task := tv.NewTask()
 		tv.tasklist.Append(task)
@@ -184,9 +194,9 @@ func (tv *TaskView) AppendTask() {
 		tv.cursor = len(tv.Tasks) - 1
 		tv.scrollToCursor()
 		tv.render()
-		_, ev := tv.EditTask()
+		task, ev := tv.EditTask()
 		if ev.Key == termbox.KeyEsc {
-			return
+			return task, ev
 		}
 	}
 }
