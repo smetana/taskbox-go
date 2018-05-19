@@ -70,6 +70,15 @@ func confirm(msg string) bool {
 	return editbox.Confirm(1, 1, 0, 0, msg)
 }
 
+func cursorIcon(mode int) string {
+	switch mode {
+	case modeMove:
+		return "@"
+	default:
+		return ">"
+	}
+}
+
 func (tv *TaskView) render() {
 	clrscr()
 
@@ -80,10 +89,9 @@ func (tv *TaskView) render() {
 	tv.x = 1
 	tv.y = 4
 
-	var b strings.Builder
-
-	fmt.Fprintf(&b, "%s Tasks(%d)", tv.filter, len(tv.Tasks))
-	editbox.Label(1, 2, 0, 0, 0, b.String())
+	var title strings.Builder
+	fmt.Fprintf(&title, "%s Tasks(%d)", tv.filter, len(tv.Tasks))
+	editbox.Label(1, 2, 0, 0, 0, title.String())
 
 	var prefix string
 	for i, t := range tv.Page() {
@@ -95,12 +103,11 @@ func (tv *TaskView) render() {
 		editbox.Label(2+tv.x, i+tv.y, tv.w, 0, 0, prefix+t.Description)
 	}
 
-	// Cursor
-	editbox.Label(tv.x, tv.CursorToY(), 0, 0, 0, ">")
+	editbox.Label(tv.x, tv.CursorToY(), 0, 0, 0, cursorIcon(tv.mode))
 
 	printHelp(0, 0,
 		"_m_enu  _n_ew  _i_nsert  _a_fter  _e_dit  " +
-		"_d_elete  _c_lose  re_o_pen  _q_uit",
+		"_d_elete  _c_lose  re_o_pen  mo_v_e  _q_uit",
 	)
 
 	termbox.Flush()
@@ -169,6 +176,11 @@ func (tv *TaskView) mainLoop() {
 				ev.Ch == 'щ' ||
 				ev.Ch == 'Щ':
 				tv.ReopenTask()
+			case ev.Ch == 'v' ||
+				ev.Ch == 'V' ||
+				ev.Ch == 'м' ||
+				ev.Ch == 'М':
+				tv.MoveTask()
 			case ev.Ch == 'q' ||
 				ev.Ch == 'Q' ||
 				ev.Ch == 'й' ||

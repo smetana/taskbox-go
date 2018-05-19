@@ -6,6 +6,11 @@ import (
 	"time"
 )
 
+const (
+	modeNormal = iota
+	modeMove
+)
+
 type TaskView struct {
 	tasklist       *TaskList
 	Tasks          []*Task
@@ -13,11 +18,13 @@ type TaskView struct {
 	x, y           int
 	w, h           int
 	cursor, scroll int
+	mode		   int
 }
 
 func NewTaskView(tasklist *TaskList) *TaskView {
 	tv := new(TaskView)
 	tv.tasklist = tasklist
+	tv.mode = modeNormal
 	tv.Filter("All")
 	return tv
 }
@@ -57,7 +64,9 @@ func (tv *TaskView) CursorDown() {
 		tv.cursor++
 		tv.scrollToCursor()
 	} else {
-		tv.AppendTask()
+		if tv.mode == modeNormal {
+			tv.AppendTask()
+		}
 	}
 }
 
@@ -204,6 +213,59 @@ func (tv *TaskView) ReopenTask() {
 	task.ClosedAt = time.Time{}
 	task.ReopenAt = time.Now()
 	tv.calculate()
+}
+
+func (tv *TaskView) MoveTaskDown() {
+	if tv.cursor >= len(tv.Tasks)-1 {
+		return
+	}
+	task := tv.SelectedTask()
+	task.Delete()
+	tv.calculate()
+	tv.SelectedTask().InsertAfter(task)
+	tv.calculate()
+	tv.CursorDown()
+}
+
+func (tv *TaskView) MoveTaskUp() {
+	if tv.cursor <= 0 {
+		return
+	}
+	oldC := tv.cursor
+	task := tv.SelectedTask()
+	task.Delete()
+	tv.calculate()
+	// cursor may move if we delete last task
+	if oldC == tv.cursor {
+		tv.CursorUp()
+	}
+	tv.SelectedTask().InsertBefore(task)
+	tv.calculate()
+}
+
+func (tv *TaskView) MoveTask() {
+	tv.mode = modeMove
+	tv.render()
+	for {
+		ev := termbox.PollEvent()
+		switch ev.Type {
+		case termbox.EventKey:
+			switch ev.Key {
+			case termbox.KeyArrowDown:
+				tv.MoveTaskDown()
+			case termbox.KeyArrowUp:
+				tv.MoveTaskUp()
+			case termbox.KeyEsc, termbox.KeyEnter:
+				tv.mode = modeNormal
+				return
+			default:
+				// do nothing
+			}
+		case termbox.EventError:
+			panic(ev.Err)
+		}
+		tv.render()
+	}
 }
 
 func (tv *TaskView) ShowMenu() bool {

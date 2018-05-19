@@ -191,3 +191,61 @@ func TestTVScrollingAndPaging(t *testing.T) {
 `)
 	assert.Equal(t, tv.SelectedTask().Description, "xyzzy")
 }
+
+func TestTVMoveTaskDown(t *testing.T) {
+	tv := tvFixture(3)
+	tv.MoveTaskDown()
+	assert.Equal(t, tv.toString(), `
+ 0 Open   bar
+ 1 Open   foo
+ 2 Open   baz
+`)
+	tv.MoveTaskDown()
+	assert.Equal(t, tv.toString(), `
+ 0 Open   bar
+ 1 Open   baz
+ 2 Open   foo
+`)
+	tv.MoveTaskDown()
+	assert.Equal(t, tv.toString(), `
+ 0 Open   bar
+ 1 Open   baz
+ 2 Open   foo
+`)
+}
+
+
+func TestTVMoveTaskUp(t *testing.T) {
+	tv := tvFixture(3)
+	tv.MoveTaskUp()
+	tv.calculate()
+	assert.Equal(t, tv.toString(), `
+ 0 Open   foo
+ 1 Open   bar
+ 2 Open   baz
+`)
+	tv.CursorDown()
+	tv.CursorDown()
+	tv.MoveTaskUp()
+	tv.calculate()
+	assert.Equal(t, tv.toString(), `
+ 0 Open   foo
+ 1 Open   baz
+ 2 Open   bar
+`)
+	tv.MoveTaskUp()
+	tv.calculate()
+	assert.Equal(t, tv.toString(), `
+ 0 Open   baz
+ 1 Open   foo
+ 2 Open   bar
+`)
+	tv.MoveTaskUp()
+	tv.calculate()
+	assert.Equal(t, tv.toString(), `
+ 0 Open   baz
+ 1 Open   foo
+ 2 Open   bar
+`)
+}
+
