@@ -163,7 +163,7 @@ func (tv *TaskView) mainLoop() {
 				ev.Ch == 'в' ||
 				ev.Ch == 'В':
 				t := tv.SelectedTask()
-				if confirm("Delete \"" + t.Description + "\"?") {
+				if t != nil && confirm("Delete \"" + t.Description + "\"?") {
 					tv.DeleteTask()
 				}
 			case ev.Ch == 'c' ||

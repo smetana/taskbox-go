@@ -202,6 +202,9 @@ func (tv *TaskView) AppendTask() (*Task, termbox.Event) {
 
 func (tv *TaskView) CloseTask() {
 	task := tv.SelectedTask()
+	if task == nil {
+		return
+	}
 	task.Status = "Closed"
 	task.ClosedAt = time.Now()
 	tv.calculate()
@@ -209,6 +212,9 @@ func (tv *TaskView) CloseTask() {
 
 func (tv *TaskView) ReopenTask() {
 	task := tv.SelectedTask()
+	if task == nil {
+		return
+	}
 	task.Status = "Open"
 	task.ClosedAt = time.Time{}
 	task.ReopenAt = time.Now()
