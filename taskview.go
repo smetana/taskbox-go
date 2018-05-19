@@ -19,12 +19,14 @@ type TaskView struct {
 	w, h           int
 	cursor, scroll int
 	mode		   int
+	modified	   bool
 }
 
 func NewTaskView(tasklist *TaskList) *TaskView {
 	tv := new(TaskView)
 	tv.tasklist = tasklist
 	tv.mode = modeNormal
+	tv.modified = false
 	tv.Filter("All")
 	return tv
 }
@@ -135,6 +137,7 @@ func (tv *TaskView) DeleteTask() {
 	if task != nil {
 		task.Delete()
 		tv.calculate()
+		tv.modified = true
 	}
 }
 
@@ -145,6 +148,7 @@ func (tv *TaskView) EditTask() (*Task, termbox.Event) {
 		return tv.AppendTask()
 	}
 
+	oldDescription := task.Description
 	input := editbox.Input(tv.x+4, tv.CursorToY(), tv.w-3, 0, 0)
 	input.SetText(task.Description)
 	ev := input.WaitExit()
@@ -152,8 +156,12 @@ func (tv *TaskView) EditTask() (*Task, termbox.Event) {
 	if input.Text() == "" {
 		tv.DeleteTask()
 		task = nil
+		tv.modified = true
 	} else {
 		task.Description = input.Text()
+		if (oldDescription != task.Description) {
+			tv.modified = true
+		}
 	}
 
 	tv.calculate()
@@ -171,6 +179,7 @@ func (tv *TaskView) InsertTaskBefore() (*Task, termbox.Event) {
 	}
 
 	tv.SelectedTask().InsertBefore(tv.NewTask())
+	tv.modified = true
 	tv.calculate()
 	tv.render()
 	return tv.EditTask()
@@ -189,6 +198,7 @@ func (tv *TaskView) AppendTask() (*Task, termbox.Event) {
 	for {
 		task := tv.NewTask()
 		tv.tasklist.Append(task)
+		tv.modified = true
 		tv.calculate()
 		tv.cursor = len(tv.Tasks) - 1
 		tv.scrollToCursor()
@@ -207,6 +217,7 @@ func (tv *TaskView) CloseTask() {
 	}
 	task.Status = "Closed"
 	task.ClosedAt = time.Now()
+	tv.modified = true
 	tv.calculate()
 }
 
@@ -218,6 +229,7 @@ func (tv *TaskView) ReopenTask() {
 	task.Status = "Open"
 	task.ClosedAt = time.Time{}
 	task.ReopenAt = time.Now()
+	tv.modified = true
 	tv.calculate()
 }
 
@@ -231,6 +243,7 @@ func (tv *TaskView) MoveTaskDown() {
 	tv.SelectedTask().InsertAfter(task)
 	tv.calculate()
 	tv.CursorDown()
+	tv.modified = true
 }
 
 func (tv *TaskView) MoveTaskUp() {
@@ -247,6 +260,7 @@ func (tv *TaskView) MoveTaskUp() {
 	}
 	tv.SelectedTask().InsertBefore(task)
 	tv.calculate()
+	tv.modified = true
 }
 
 func (tv *TaskView) MoveTask() {

@@ -91,6 +91,9 @@ func (tv *TaskView) render() {
 
 	var title strings.Builder
 	fmt.Fprintf(&title, "%s Tasks(%d)", tv.filter, len(tv.Tasks))
+	if tv.modified {
+		fmt.Fprintf(&title, " (modified)")
+	}
 	editbox.Label(1, 2, 0, 0, 0, title.String())
 
 	var prefix string
@@ -218,7 +221,10 @@ func main() {
 	tv.render()
 	tv.mainLoop()
 
+	if tv.modified && confirm("Save "+filename) {
+		err = tasklist.Save(filename)
+		check(err)
+	}
+
 	termbox.Close()
-	err = tasklist.Save(filename)
-	check(err)
 }
