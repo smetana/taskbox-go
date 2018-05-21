@@ -3,7 +3,8 @@ package main
 import (
 	"github.com/nsf/termbox-go"
 	"github.com/smetana/editbox-go"
-	"time"
+	"fmt"
+	"strings"
 )
 
 const (
@@ -11,15 +12,20 @@ const (
 	modeMove
 )
 
+var cursors = map[int]rune{
+	modeNormal: '>',
+	modeMove: '@',
+}
+
 type TaskView struct {
 	tasklist       *TaskList
-	Tasks          []*Task
-	filter         string
+	view           []int
+	filter         Status
 	x, y           int
 	w, h           int
 	cursor, scroll int
-	mode		   int
-	modified	   bool
+	mode           int
+	modified       bool
 }
 
 func NewTaskView(tasklist *TaskList) *TaskView {
@@ -27,29 +33,52 @@ func NewTaskView(tasklist *TaskList) *TaskView {
 	tv.tasklist = tasklist
 	tv.mode = modeNormal
 	tv.modified = false
-	tv.Filter("All")
+	tv.Filter(StatusAll)
 	return tv
 }
 
 func (tv *TaskView) calculate() {
-	tv.Tasks = make([]*Task, 0)
-	for t := tv.tasklist.First(); t != nil; t = t.Next() {
-		if tv.filter == "All" || t.Status == tv.filter {
-			tv.Tasks = append(tv.Tasks, t)
+	tv.view = make([]int, 0)
+	for i, t := range tv.tasklist.Tasks {
+		if tv.filter == StatusAll || t.Status == tv.filter {
+			tv.view = append(tv.view, i)
 		}
 	}
-	if len(tv.Tasks) == 0 {
+	if len(tv.view) == 0 {
 		tv.cursor = 0
-	} else if tv.cursor >= len(tv.Tasks) {
-		tv.cursor = len(tv.Tasks) - 1
+	} else if tv.cursor >= len(tv.view) {
+		tv.cursor = len(tv.view) - 1
 	}
 }
 
-func (tv *TaskView) Filter(status string) {
+func (tv *TaskView) Filter(s Status) {
 	tv.cursor = 0
 	tv.scroll = 0
-	tv.filter = status
+	tv.filter = s
 	tv.calculate()
+}
+
+func (tv *TaskView) String() string {
+	var to int
+	if tv.scroll+tv.h > len(tv.view) {
+		to = len(tv.view)
+	} else {
+		to = tv.scroll + tv.h
+	}
+
+	var s strings.Builder
+	var cursor rune
+	var t Task
+	for i, index := range tv.view[tv.scroll:to] {
+		if i == tv.CursorToPage() {
+			cursor = cursors[tv.mode]
+		} else {
+			cursor = ' '
+		}
+		t = tv.tasklist.Tasks[index]
+		fmt.Fprintf(&s, "%c %s\n", cursor, t.String())
+	}
+	return s.String()
 }
 
 func (tv *TaskView) scrollToCursor() {
@@ -62,7 +91,7 @@ func (tv *TaskView) scrollToCursor() {
 }
 
 func (tv *TaskView) CursorDown() {
-	if tv.cursor < len(tv.Tasks)-1 {
+	if tv.cursor < len(tv.view)-1 {
 		tv.cursor++
 		tv.scrollToCursor()
 	} else {
@@ -81,8 +110,8 @@ func (tv *TaskView) CursorUp() {
 
 func (tv *TaskView) PageDown() {
 	tv.cursor = tv.cursor + tv.h - 1
-	if tv.cursor >= len(tv.Tasks) {
-		tv.cursor = len(tv.Tasks) - 1
+	if tv.cursor >= len(tv.view) {
+		tv.cursor = len(tv.view) - 1
 	}
 	tv.scrollToCursor()
 }
@@ -95,16 +124,6 @@ func (tv *TaskView) PageUp() {
 	tv.scrollToCursor()
 }
 
-func (tv *TaskView) Page() []*Task {
-	var to int
-	if tv.scroll+tv.h > len(tv.Tasks) {
-		to = len(tv.Tasks)
-	} else {
-		to = tv.scroll + tv.h
-	}
-	return tv.Tasks[tv.scroll:to]
-}
-
 func (tv *TaskView) CursorToPage() int {
 	return tv.cursor - tv.scroll
 }
@@ -113,43 +132,43 @@ func (tv *TaskView) CursorToY() int {
 	return tv.y + tv.CursorToPage()
 }
 
-func (tv *TaskView) SelectedTask() *Task {
-	if len(tv.Tasks) > 0 {
-		return tv.Tasks[tv.cursor]
+func (tv *TaskView) SelectedTask() (int, *Task) {
+	if len(tv.view) > 0 {
+		index := tv.view[tv.cursor]
+		return index, &tv.tasklist.Tasks[index]
 	} else {
-		return nil
+		return -1, nil
 	}
 }
 
-func (tv *TaskView) NewTask() *Task {
-	task := &Task{}
-	if tv.filter == "All" {
-		task.Status = "Open"
+func (tv *TaskView) NewTask() Task {
+	task := Task{}
+	if tv.filter == StatusAll {
+		task.Status = StatusOpen
 	} else {
 		task.Status = tv.filter
 	}
-	task.CreatedAt = time.Now()
 	return task
 }
 
 func (tv *TaskView) DeleteTask() {
-	task := tv.SelectedTask()
+	index, task := tv.SelectedTask()
 	if task != nil {
-		task.Delete()
+		tv.tasklist.Delete(index)
 		tv.calculate()
 		tv.modified = true
 	}
 }
 
 func (tv *TaskView) EditTask() (*Task, termbox.Event) {
-	task := tv.SelectedTask()
+	_, task := tv.SelectedTask()
 
 	if task == nil {
 		return tv.AppendTask()
 	}
 
 	oldDescription := task.Description
-	input := editbox.Input(tv.x+4, tv.CursorToY(), tv.w-3, 0, 0)
+	input := editbox.Input(tv.x+6, tv.CursorToY(), tv.w-3, 0, 0)
 	input.SetText(task.Description)
 	ev := input.WaitExit()
 
@@ -159,7 +178,7 @@ func (tv *TaskView) EditTask() (*Task, termbox.Event) {
 		tv.modified = true
 	} else {
 		task.Description = input.Text()
-		if (oldDescription != task.Description) {
+		if oldDescription != task.Description {
 			tv.modified = true
 		}
 	}
@@ -172,13 +191,13 @@ func (tv *TaskView) EditTask() (*Task, termbox.Event) {
 }
 
 func (tv *TaskView) InsertTaskBefore() (*Task, termbox.Event) {
-	task := tv.SelectedTask()
+	index, task := tv.SelectedTask()
 
 	if task == nil {
 		return tv.AppendTask()
 	}
 
-	tv.SelectedTask().InsertBefore(tv.NewTask())
+	tv.tasklist.InsertBefore(index, tv.NewTask())
 	tv.modified = true
 	tv.calculate()
 	tv.render()
@@ -186,7 +205,7 @@ func (tv *TaskView) InsertTaskBefore() (*Task, termbox.Event) {
 }
 
 func (tv *TaskView) InsertTaskAfter() (*Task, termbox.Event) {
-	if tv.cursor == len(tv.Tasks)-1 {
+	if tv.cursor == len(tv.view)-1 {
 		return tv.AppendTask()
 	} else {
 		tv.CursorDown()
@@ -196,11 +215,10 @@ func (tv *TaskView) InsertTaskAfter() (*Task, termbox.Event) {
 
 func (tv *TaskView) AppendTask() (*Task, termbox.Event) {
 	for {
-		task := tv.NewTask()
-		tv.tasklist.Append(task)
+		tv.tasklist.Append(tv.NewTask())
 		tv.modified = true
 		tv.calculate()
-		tv.cursor = len(tv.Tasks) - 1
+		tv.cursor = len(tv.view) - 1
 		tv.scrollToCursor()
 		tv.render()
 		task, ev := tv.EditTask()
@@ -210,37 +228,29 @@ func (tv *TaskView) AppendTask() (*Task, termbox.Event) {
 	}
 }
 
-func (tv *TaskView) CloseTask() {
-	task := tv.SelectedTask()
+func (tv *TaskView) ToggleTask() {
+	_, task := tv.SelectedTask()
 	if task == nil {
 		return
 	}
-	task.Status = "Closed"
-	task.ClosedAt = time.Now()
-	tv.modified = true
-	tv.calculate()
-}
-
-func (tv *TaskView) ReopenTask() {
-	task := tv.SelectedTask()
-	if task == nil {
-		return
+	if task.Status == StatusOpen {
+		task.Status = StatusClosed
+	} else {
+		task.Status = StatusOpen
 	}
-	task.Status = "Open"
-	task.ClosedAt = time.Time{}
-	task.ReopenAt = time.Now()
 	tv.modified = true
 	tv.calculate()
 }
 
 func (tv *TaskView) MoveTaskDown() {
-	if tv.cursor >= len(tv.Tasks)-1 {
+	if tv.cursor >= len(tv.view)-1 {
 		return
 	}
-	task := tv.SelectedTask()
-	task.Delete()
+	index, _ := tv.SelectedTask()
+	task := tv.tasklist.Delete(index)
 	tv.calculate()
-	tv.SelectedTask().InsertAfter(task)
+	index, _ = tv.SelectedTask()
+	tv.tasklist.InsertAfter(index, task)
 	tv.calculate()
 	tv.CursorDown()
 	tv.modified = true
@@ -251,14 +261,15 @@ func (tv *TaskView) MoveTaskUp() {
 		return
 	}
 	oldC := tv.cursor
-	task := tv.SelectedTask()
-	task.Delete()
+	index, _ := tv.SelectedTask()
+	task := tv.tasklist.Delete(index)
 	tv.calculate()
 	// cursor may move if we delete last task
 	if oldC == tv.cursor {
 		tv.CursorUp()
 	}
-	tv.SelectedTask().InsertBefore(task)
+	index, _ = tv.SelectedTask()
+	tv.tasklist.InsertBefore(index, task)
 	tv.calculate()
 	tv.modified = true
 }
@@ -289,7 +300,7 @@ func (tv *TaskView) MoveTask() {
 }
 
 func (tv *TaskView) ShowMenu() bool {
-	clrscr()
+	termbox.Clear(0, 0)
 	menu := editbox.Select(
 		2, 2, 15, 10,
 		0, 0, 0|termbox.AttrReverse, 0|termbox.AttrReverse,
@@ -305,11 +316,11 @@ func (tv *TaskView) ShowMenu() bool {
 
 	switch menu.SelectedIndex() {
 	case 0:
-		tv.Filter("Open")
+		tv.Filter(StatusOpen)
 	case 1:
-		tv.Filter("Closed")
+		tv.Filter(StatusClosed)
 	case 2:
-		tv.Filter("All")
+		tv.Filter(StatusAll)
 	case 4:
 		return false
 	}

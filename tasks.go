@@ -15,21 +15,9 @@ func check(e error) {
 	}
 }
 
-func startTermbox() {
-	err := termbox.Init()
-	check(err)
-	termbox.SetInputMode(termbox.InputEsc)
-	termbox.HideCursor()
-}
-
-func clrscr() {
-	termbox.Clear(termbox.ColorDefault, termbox.ColorDefault)
-}
-
 func getCell(x, y int) termbox.Cell {
 	w, _ := termbox.Size()
-	buf := termbox.CellBuffer()
-	return buf[y*w+x]
+	return termbox.CellBuffer()[y*w+x]
 }
 
 func setCellColors(x, y int, fg, bg termbox.Attribute) {
@@ -37,20 +25,11 @@ func setCellColors(x, y int, fg, bg termbox.Attribute) {
 	termbox.SetCell(x, y, cell.Ch, fg, bg)
 }
 
-func reverseCellColors(x, y int) {
-	cell := getCell(x, y)
-	termbox.SetCell(
-		x, y, cell.Ch,
-		cell.Fg|termbox.AttrReverse,
-		cell.Bg|termbox.AttrReverse,
-	)
-}
-
 func printHelp(x, y int, s string) {
 	i := 0
 	shortcut := false
 	fg := termbox.ColorDefault
-	for _, r := range(s) {
+	for _, r := range s {
 		if r == '_' {
 			shortcut = !shortcut
 		} else {
@@ -59,28 +38,19 @@ func printHelp(x, y int, s string) {
 			} else {
 				fg = termbox.ColorDefault
 			}
-			termbox.SetCell(x + i, y, r, fg, 0)
+			termbox.SetCell(x+i, y, r, fg, 0)
 			i++
 		}
 	}
 }
 
 func confirm(msg string) bool {
-	clrscr()
+	termbox.Clear(0, 0)
 	return editbox.Confirm(1, 1, 0, 0, msg)
 }
 
-func cursorIcon(mode int) string {
-	switch mode {
-	case modeMove:
-		return "@"
-	default:
-		return ">"
-	}
-}
-
 func (tv *TaskView) render() {
-	clrscr()
+	termbox.Clear(0, 0)
 
 	// TODO Optimization: Move block below to separate event
 	w, h := termbox.Size()
@@ -90,27 +60,17 @@ func (tv *TaskView) render() {
 	tv.y = 4
 
 	var title strings.Builder
-	fmt.Fprintf(&title, "%s Tasks(%d)", tv.filter, len(tv.Tasks))
+	fmt.Fprintf(&title, "%s Tasks(%d)", tv.filter.String(), len(tv.view))
 	if tv.modified {
 		fmt.Fprintf(&title, " (modified)")
 	}
 	editbox.Label(1, 2, 0, 0, 0, title.String())
 
-	var prefix string
-	for i, t := range tv.Page() {
-		if t.IsClosed() {
-			prefix = "C "
-		} else {
-			prefix = "* "
-		}
-		editbox.Label(2+tv.x, i+tv.y, tv.w, 0, 0, prefix+t.Description)
-	}
-
-	editbox.Label(tv.x, tv.CursorToY(), 0, 0, 0, cursorIcon(tv.mode))
+	editbox.Text(tv.x, tv.y, 0, 0, 0, 0, tv.String())
 
 	printHelp(0, 0,
-		"_m_enu  _n_ew  _i_nsert  _a_fter  _e_dit  " +
-		"_d_elete  _c_lose  re_o_pen  mo_v_e  _q_uit",
+		"_m_enu  _n_ew  _i_nsert  _a_fter  _e_dit  "+
+			"_d_elete  _t_oggle  mo_v_e  _q_uit",
 	)
 
 	termbox.Flush()
@@ -165,20 +125,16 @@ func (tv *TaskView) mainLoop() {
 				ev.Ch == 'D' ||
 				ev.Ch == 'в' ||
 				ev.Ch == 'В':
-				t := tv.SelectedTask()
-				if t != nil && confirm("Delete \"" + t.Description + "\"?") {
+				_, t := tv.SelectedTask()
+				if t != nil && confirm("Delete \""+t.Description+"\"?") {
 					tv.DeleteTask()
 				}
-			case ev.Ch == 'c' ||
-				ev.Ch == 'C' ||
-				ev.Ch == 'с' ||
-				ev.Ch == 'С':
-				tv.CloseTask()
-			case ev.Ch == 'o' ||
-				ev.Ch == 'O' ||
-				ev.Ch == 'щ' ||
-				ev.Ch == 'Щ':
-				tv.ReopenTask()
+			case ev.Key == termbox.KeySpace ||
+				ev.Ch == 't' ||
+				ev.Ch == 'T' ||
+				ev.Ch == 'е' ||
+				ev.Ch == 'Е':
+				tv.ToggleTask()
 			case ev.Ch == 'v' ||
 				ev.Ch == 'V' ||
 				ev.Ch == 'м' ||
@@ -200,9 +156,10 @@ func (tv *TaskView) mainLoop() {
 }
 
 func main() {
+
 	flagset := flag.NewFlagSet("tasks", flag.ExitOnError)
 	flagset.Usage = func() {
-		fmt.Println("Usage: tasks YAMLFILE")
+		fmt.Println("Usage: tasks filename")
 		flagset.PrintDefaults()
 	}
 	flagset.Parse(os.Args[1:])
@@ -215,9 +172,13 @@ func main() {
 	err := tasklist.Load(filename)
 	check(err)
 
-	startTermbox()
+	err = termbox.Init()
+	check(err)
+	termbox.SetInputMode(termbox.InputEsc)
+	termbox.HideCursor()
+
 	tv := NewTaskView(tasklist)
-	tv.Filter("Open")
+	tv.Filter(StatusOpen)
 	tv.render()
 	tv.mainLoop()
 

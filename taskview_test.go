@@ -1,9 +1,8 @@
 package main
 
 import (
-	"fmt"
+	"github.com/MakeNowJust/heredoc"
 	"github.com/stretchr/testify/assert"
-	"strings"
 	"testing"
 )
 
@@ -41,38 +40,11 @@ func tvFixture(size int) *TaskView {
 		"tutu",
 	}
 	for i := 0; i < size; i++ {
-		tl.Append(&Task{Description: data[i], Status: "Open"})
+		tl.Append(Task{Description: data[i], Status: StatusOpen})
 	}
 	tv := NewTaskView(tl)
-	tv.h = len(tv.Tasks)
+	tv.h = len(tv.view)
 	return tv
-}
-
-func (tv *TaskView) toString() string {
-	var s strings.Builder
-	fmt.Fprintf(&s, "\n")
-	for i, t := range tv.Tasks {
-		fmt.Fprintf(&s, "%2d %-6s %s\n", i, t.Status, t.Description)
-	}
-	return s.String()
-}
-
-func (tv *TaskView) pageToString() string {
-	var s strings.Builder
-	var cursor string
-
-	fmt.Fprintf(&s, "\n")
-
-	for i, t := range tv.Page() {
-		if i == tv.CursorToPage() {
-			cursor = ">"
-		} else {
-			cursor = " "
-		}
-		fmt.Fprintf(&s, "%s %2d %-6s %s\n", cursor, tv.scroll+i, t.Status, t.Description)
-	}
-
-	return s.String()
 }
 
 // ----------------------------------------------------------------------------
@@ -81,42 +53,53 @@ func TestTVNew(t *testing.T) {
 	tl := &TaskList{}
 	tv := NewTaskView(tl)
 	assert.Equal(t, tv.cursor, 0)
-	assert.True(t, tv.SelectedTask() == nil)
+	i, task := tv.SelectedTask()
+	assert.Equal(t, i, -1)
+	assert.True(t, task == nil)
 }
 
 func TestTVAppend(t *testing.T) {
 	tv := tvFixture(3)
-	assert.Equal(t, tv.toString(), `
- 0 Open   foo
- 1 Open   bar
- 2 Open   baz
-`)
+	assert.Equal(t, tv.String(), heredoc.Doc(`
+	> [ ] foo
+	  [ ] bar
+	  [ ] baz
+	`))
 }
 
 func TestTVInsertAndFilter(t *testing.T) {
 	tv := tvFixture(3)
-	task := tv.Tasks[1]
-	task.InsertBefore(&Task{Description: "qux", Status: "Closed"})
-	task.InsertAfter(&Task{Description: "quux", Status: "Closed"})
+	tv.h = 100
+	tl := tv.tasklist
+	tl.InsertBefore(1, Task{Description: "qux", Status: StatusClosed})
+	tl.InsertAfter(2, Task{Description: "quux", Status: StatusClosed})
 	tv.calculate()
-	assert.Equal(t, tv.toString(), `
- 0 Open   foo
- 1 Closed qux
- 2 Open   bar
- 3 Closed quux
- 4 Open   baz
-`)
-	tv.Filter("Open")
-	assert.Equal(t, tv.toString(), `
- 0 Open   foo
- 1 Open   bar
- 2 Open   baz
-`)
-	tv.Filter("Closed")
-	assert.Equal(t, tv.toString(), `
- 0 Closed qux
- 1 Closed quux
-`)
+	assert.Equal(t, tv.String(), heredoc.Doc(`
+	> [ ] foo
+	  [X] qux
+	  [ ] bar
+	  [X] quux
+	  [ ] baz
+	`))
+	tv.Filter(StatusOpen)
+	assert.Equal(t, tv.String(), heredoc.Doc(`
+	> [ ] foo
+	  [ ] bar
+	  [ ] baz
+	`))
+	tv.Filter(StatusClosed)
+	assert.Equal(t, tv.String(), heredoc.Doc(`
+	> [X] qux
+	  [X] quux
+	`))
+	tv.Filter(StatusAll)
+	assert.Equal(t, tv.String(), heredoc.Doc(`
+	> [ ] foo
+	  [X] qux
+	  [ ] bar
+	  [X] quux
+	  [ ] baz
+	`))
 }
 
 func TestTVScrollingAndPaging(t *testing.T) {
@@ -125,127 +108,138 @@ func TestTVScrollingAndPaging(t *testing.T) {
 	assert.Equal(t, tv.cursor, 0)
 	tv.CursorDown()
 	tv.CursorDown()
-	assert.Equal(t, tv.pageToString(), `
-   0 Open   foo
-   1 Open   bar
->  2 Open   baz
-   3 Open   qux
-   4 Open   quux
-`)
-	assert.Equal(t, tv.SelectedTask().Description, "baz")
+	assert.Equal(t, tv.String(), heredoc.Doc(`
+	  [ ] foo
+	  [ ] bar
+	> [ ] baz
+	  [ ] qux
+	  [ ] quux
+	`))
+	i, task := tv.SelectedTask()
+	assert.Equal(t, i, 2)
+	assert.Equal(t, task.Description, "baz")
 	tv.CursorDown()
 	tv.CursorDown()
 	tv.CursorDown()
 	tv.CursorDown()
 	assert.Equal(t, tv.cursor, 6)
-	assert.Equal(t, tv.pageToString(), `
-   2 Open   baz
-   3 Open   qux
-   4 Open   quux
-   5 Open   corge
->  6 Open   grault
-`)
-	assert.Equal(t, tv.SelectedTask().Description, "grault")
+	assert.Equal(t, tv.String(), heredoc.Doc(`
+	  [ ] baz
+	  [ ] qux
+	  [ ] quux
+	  [ ] corge
+	> [ ] grault
+	`))
+	i, task = tv.SelectedTask()
+	assert.Equal(t, i, 6)
+	assert.Equal(t, task.Description, "grault")
 	tv.PageDown()
 	tv.PageDown()
-	assert.Equal(t, tv.pageToString(), `
-  10 Open   plugh
-  11 Open   xyzzy
-  12 Open   thud
-  13 Open   blep
-> 14 Open   blah
-`)
-	assert.Equal(t, tv.SelectedTask().Description, "blah")
+	assert.Equal(t, tv.String(), heredoc.Doc(`
+	  [ ] plugh
+	  [ ] xyzzy
+	  [ ] thud
+	  [ ] blep
+	> [ ] blah
+	`))
+	_, task = tv.SelectedTask()
+	assert.Equal(t, task.Description, "blah")
 	// Go to end
 	tv.PageDown()
 	tv.PageDown()
 	tv.PageDown()
 	tv.PageDown()
 
-	assert.Equal(t, tv.pageToString(), `
-  17 Open   wibble
-  18 Open   wobble
-  19 Open   wubble
-  20 Open   flob
-> 21 Open   toto
-`)
-	assert.Equal(t, tv.SelectedTask().Description, "toto")
+	assert.Equal(t, tv.String(), heredoc.Doc(`
+	  [ ] wibble
+	  [ ] wobble
+	  [ ] wubble
+	  [ ] flob
+	> [ ] toto
+	`))
+	_, task = tv.SelectedTask()
+	assert.Equal(t, task.Description, "toto")
 	tv.CursorUp()
 	tv.CursorUp()
-	assert.Equal(t, tv.pageToString(), `
-  17 Open   wibble
-  18 Open   wobble
-> 19 Open   wubble
-  20 Open   flob
-  21 Open   toto
-`)
-	assert.Equal(t, tv.SelectedTask().Description, "wubble")
+	assert.Equal(t, tv.String(), heredoc.Doc(`
+	  [ ] wibble
+	  [ ] wobble
+	> [ ] wubble
+	  [ ] flob
+	  [ ] toto
+	`))
+	_, task = tv.SelectedTask()
+	assert.Equal(t, task.Description, "wubble")
 	tv.PageUp()
 	tv.PageUp()
-	assert.Equal(t, tv.pageToString(), `
-> 11 Open   xyzzy
-  12 Open   thud
-  13 Open   blep
-  14 Open   blah
-  15 Open   boop
-`)
-	assert.Equal(t, tv.SelectedTask().Description, "xyzzy")
+	assert.Equal(t, tv.String(), heredoc.Doc(`
+	> [ ] xyzzy
+	  [ ] thud
+	  [ ] blep
+	  [ ] blah
+	  [ ] boop
+	`))
+	_, task = tv.SelectedTask()
+	assert.Equal(t, task.Description, "xyzzy")
 }
 
 func TestTVMoveTaskDown(t *testing.T) {
 	tv := tvFixture(3)
 	tv.MoveTaskDown()
-	assert.Equal(t, tv.toString(), `
- 0 Open   bar
- 1 Open   foo
- 2 Open   baz
-`)
+	assert.Equal(t, tv.String(), heredoc.Doc(`
+	  [ ] bar
+	> [ ] foo
+	  [ ] baz
+	`))
 	tv.MoveTaskDown()
-	assert.Equal(t, tv.toString(), `
- 0 Open   bar
- 1 Open   baz
- 2 Open   foo
-`)
+	assert.Equal(t, tv.String(), heredoc.Doc(`
+	  [ ] bar
+	  [ ] baz
+	> [ ] foo
+	`))
 	tv.MoveTaskDown()
-	assert.Equal(t, tv.toString(), `
- 0 Open   bar
- 1 Open   baz
- 2 Open   foo
-`)
+	assert.Equal(t, tv.String(), heredoc.Doc(`
+	  [ ] bar
+	  [ ] baz
+	> [ ] foo
+	`))
 }
-
 
 func TestTVMoveTaskUp(t *testing.T) {
 	tv := tvFixture(3)
 	tv.MoveTaskUp()
 	tv.calculate()
-	assert.Equal(t, tv.toString(), `
- 0 Open   foo
- 1 Open   bar
- 2 Open   baz
-`)
+	assert.Equal(t, tv.String(), heredoc.Doc(`
+	> [ ] foo
+	  [ ] bar
+	  [ ] baz
+	`))
 	tv.CursorDown()
 	tv.CursorDown()
+	assert.Equal(t, tv.String(), heredoc.Doc(`
+	  [ ] foo
+	  [ ] bar
+	> [ ] baz
+	`))
 	tv.MoveTaskUp()
 	tv.calculate()
-	assert.Equal(t, tv.toString(), `
- 0 Open   foo
- 1 Open   baz
- 2 Open   bar
-`)
+	assert.Equal(t, tv.String(), heredoc.Doc(`
+	  [ ] foo
+	> [ ] baz
+	  [ ] bar
+	`))
 	tv.MoveTaskUp()
 	tv.calculate()
-	assert.Equal(t, tv.toString(), `
- 0 Open   baz
- 1 Open   foo
- 2 Open   bar
-`)
+	assert.Equal(t, tv.String(), heredoc.Doc(`
+	> [ ] baz
+	  [ ] foo
+	  [ ] bar
+	`))
 	tv.MoveTaskUp()
 	tv.calculate()
-	assert.Equal(t, tv.toString(), `
- 0 Open   baz
- 1 Open   foo
- 2 Open   bar
-`)
+	assert.Equal(t, tv.String(), heredoc.Doc(`
+	> [ ] baz
+	  [ ] foo
+	  [ ] bar
+	`))
 }
-

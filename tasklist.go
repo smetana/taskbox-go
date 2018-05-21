@@ -1,166 +1,102 @@
 package main
 
 import (
-	"gopkg.in/yaml.v2"
+	"bufio"
+	"fmt"
 	"io/ioutil"
 	"os"
-	"time"
+	"strings"
 )
+
+type Status rune
+
+const (
+	StatusAll    Status = '*'
+	StatusOpen          = ' '
+	StatusClosed        = 'X'
+)
+
+func (s Status) String() string {
+	return map[Status]string{
+		StatusAll:    "All",
+		StatusOpen:   "Open",
+		StatusClosed: "Closed",
+	}[s]
+}
 
 type Task struct {
 	Description string
-	Status      string
-	CreatedAt   time.Time
-	ClosedAt    time.Time
-	ReopenAt    time.Time
-	tasklist    *TaskList
-	next        *Task
-	prev        *Task
+	Status      Status
+}
+
+func (task *Task) String() string {
+	return fmt.Sprintf("[%c] %s", task.Status, task.Description)
 }
 
 type TaskList struct {
-	first  *Task
-	last   *Task
-	length int
+	Tasks []Task
 }
 
-func (task *Task) IsClosed() bool {
-	return task.Status == "Closed"
-}
-
-func (task *Task) Next() *Task {
-	return task.next
-}
-
-func (task *Task) Prev() *Task {
-	return task.prev
-}
-
-func (task *Task) checkIsElement() {
-	if task.tasklist == nil {
-		panic("Receiver is not a tasklist element")
+func (tasklist *TaskList) String() string {
+	var s strings.Builder
+	for _, t := range tasklist.Tasks {
+		fmt.Fprintln(&s, t.String())
 	}
+	return s.String()
 }
 
-func (task *Task) InsertBefore(newTask *Task) *Task {
-	task.checkIsElement()
-	newTask.tasklist = task.tasklist
-	newTask.next = task
-	if task.prev == nil {
-		newTask.prev = nil
-		task.prev = newTask
-		task.tasklist.first = newTask
+func (tasklist *TaskList) Append(task Task) {
+	tasklist.Tasks = append(tasklist.Tasks, task)
+}
+
+func (tasklist *TaskList) InsertBefore(i int, task Task) {
+	tasklist.Tasks = append(tasklist.Tasks, Task{})
+	copy(tasklist.Tasks[i+1:], tasklist.Tasks[i:])
+	tasklist.Tasks[i] = task
+}
+
+func (tasklist *TaskList) InsertAfter(i int, task Task) {
+	if i == len(tasklist.Tasks)-1 {
+		tasklist.Append(task)
 	} else {
-		newTask.prev = task.prev
-		task.prev.next = newTask
-		task.prev = newTask
+		tasklist.InsertBefore(i+1, task)
 	}
-	task.tasklist.length++
-	return newTask
 }
 
-func (task *Task) InsertAfter(newTask *Task) *Task {
-	task.checkIsElement()
-	newTask.tasklist = task.tasklist
-	newTask.prev = task
-	if task.next == nil {
-		newTask.next = nil
-		task.next = newTask
-		task.tasklist.last = newTask
-	} else {
-		task.next.prev = newTask
-		newTask.next = task.next
-		task.next = newTask
-	}
-	task.tasklist.length++
-	return newTask
-}
-
-func (task *Task) Delete() {
-	task.checkIsElement()
-	if task.prev == nil {
-		task.tasklist.first = task.next
-	} else {
-		task.prev.next = task.next
-	}
-	if task.next == nil {
-		task.tasklist.last = task.prev
-	} else {
-		task.next.prev = task.prev
-	}
-	task.tasklist.length--
-	// Prevent memleaks
-	task.tasklist = nil
-	task.next = nil
-	task.prev = nil
-}
-
-func (tasklist *TaskList) Clear() {
-	tasklist.first = nil
-	tasklist.last = nil
-	tasklist.length = 0
-}
-
-func (tasklist *TaskList) First() *Task {
-	return tasklist.first
-}
-
-func (tasklist *TaskList) Last() *Task {
-	return tasklist.last
-}
-
-func (tasklist *TaskList) Length() int {
-	return tasklist.length
-}
-
-func (tasklist *TaskList) Append(task *Task) *Task {
-	// Don't know where task came from
-	task.tasklist = tasklist
-	task.next = nil
-	if tasklist.first == nil {
-		task.prev = nil
-		tasklist.first = task
-		tasklist.last = task
-	} else {
-		task.prev = tasklist.last
-		tasklist.last.next = task
-		tasklist.last = task
-	}
-	tasklist.length++
+func (tasklist *TaskList) Delete(i int) Task {
+	task := tasklist.Tasks[i]
+	copy(tasklist.Tasks[i:], tasklist.Tasks[i+1:])
+	tasklist.Tasks[len(tasklist.Tasks)-1] = Task{}
+	tasklist.Tasks = tasklist.Tasks[:len(tasklist.Tasks)-1]
 	return task
 }
 
 func (tasklist *TaskList) Load(path string) error {
-	tasklist.Clear()
+	tasklist.Tasks = make([]Task, 0)
 
-	var tasks []Task
-	yml, err := ioutil.ReadFile(path)
-	if err == nil {
-		err = yaml.Unmarshal(yml, &tasks)
-	} else if os.IsNotExist(err) {
-		// It's ok create file
-		err = nil
+	f, err := os.Open(path)
+	if os.IsNotExist(err) {
+		// It's ok, Will create file
+		return nil
 	}
+	// But be aware of other errors
+	check(err)
+	defer f.Close()
 
-	// NOTE Go uses a copy of the value instead of the value
-	// itself within a range clause, So always use index
-	// when iterating slices to make TaskList operations
-	for i, _ := range tasks {
-		tasklist.Append(&tasks[i])
+	scanner := bufio.NewScanner(f)
+	for scanner.Scan() {
+		s := scanner.Text()
+		t := Task{}
+		t.Status = Status(s[1])
+		t.Description = s[4:]
+		tasklist.Append(t)
 	}
-	return err
+	return scanner.Err()
 }
 
 func (tasklist *TaskList) Save(path string) error {
-	var tasks []Task
-	for t := tasklist.First(); t != nil; t = t.Next() {
-		tasks = append(tasks, *t)
-	}
-
-	yml, err := yaml.Marshal(&tasks)
-	if err == nil {
-		err = ioutil.WriteFile(path, yml, 0644)
-	}
-
-	return err
+	f, err := os.Create(path)
+	check(err)
+	defer f.Close()
+	return ioutil.WriteFile(path, []byte(tasklist.String()), 0644)
 }
