@@ -7,16 +7,6 @@ import (
 	"strings"
 )
 
-const (
-	modeNormal = iota
-	modeMove
-)
-
-var cursors = map[int]rune{
-	modeNormal: '>',
-	modeMove:   '@',
-}
-
 type TaskView struct {
 	tasklist       *TaskList
 	view           []int
@@ -24,14 +14,12 @@ type TaskView struct {
 	x, y           int
 	w, h           int
 	cursor, scroll int
-	mode           int
 	modified       bool
 }
 
 func NewTaskView(tasklist *TaskList) *TaskView {
 	tv := new(TaskView)
 	tv.tasklist = tasklist
-	tv.mode = modeNormal
 	tv.modified = false
 	tv.Filter(StatusAll)
 	return tv
@@ -71,7 +59,7 @@ func (tv *TaskView) String() string {
 	var t Task
 	for i, index := range tv.view[tv.scroll:to] {
 		if i == tv.CursorToPage() {
-			cursor = cursors[tv.mode]
+			cursor = '>'
 		} else {
 			cursor = ' '
 		}
@@ -95,9 +83,7 @@ func (tv *TaskView) CursorDown() {
 		tv.cursor++
 		tv.scrollToCursor()
 	} else {
-		if tv.mode == modeNormal {
-			tv.AppendTask()
-		}
+		tv.AppendTask()
 	}
 }
 
@@ -264,31 +250,6 @@ func (tv *TaskView) MoveTaskUp() {
 	tv.calculate()
 	tv.CursorUp()
 	tv.modified = true
-}
-
-func (tv *TaskView) MoveTask() {
-	tv.mode = modeMove
-	tv.render()
-	for {
-		ev := termbox.PollEvent()
-		switch ev.Type {
-		case termbox.EventKey:
-			switch ev.Key {
-			case termbox.KeyArrowDown:
-				tv.MoveTaskDown()
-			case termbox.KeyArrowUp:
-				tv.MoveTaskUp()
-			case termbox.KeyEsc, termbox.KeyEnter:
-				tv.mode = modeNormal
-				return
-			default:
-				// do nothing
-			}
-		case termbox.EventError:
-			panic(ev.Err)
-		}
-		tv.render()
-	}
 }
 
 func (tv *TaskView) ShowMenu() bool {

@@ -70,7 +70,7 @@ func (tv *TaskView) render() {
 
 	printHelp(0, 0,
 		"_m_enu  _n_ew  _i_nsert  _a_fter  _e_dit  "+
-			"_d_elete  _t_oggle  mo_v_e  _q_uit",
+			"_d_elete  _t_oggle  _q_uit",
 	)
 
 	termbox.Flush()
@@ -135,11 +135,10 @@ func (tv *TaskView) mainLoop() {
 				ev.Ch == 'е' ||
 				ev.Ch == 'Е':
 				tv.ToggleTask()
-			case ev.Ch == 'v' ||
-				ev.Ch == 'V' ||
-				ev.Ch == 'м' ||
-				ev.Ch == 'М':
-				tv.MoveTask()
+			case ev.Key == termbox.KeyArrowRight:
+				tv.MoveTaskDown()
+			case ev.Key == termbox.KeyArrowLeft:
+				tv.MoveTaskUp()
 			case ev.Ch == 'q' ||
 				ev.Ch == 'Q' ||
 				ev.Ch == 'й' ||
