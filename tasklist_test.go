@@ -76,3 +76,19 @@ func TestTLDelete(t *testing.T) {
 	`))
 	assert.Equal(t, task.String(), "[ ] Bar")
 }
+
+func TestTLSwap(t *testing.T) {
+	tl := tasklistFixture()
+	tl.Swap(0, 2)
+	assert.Equal(t, tl.String(), heredoc.Doc(`
+		[ ] Baz
+		[ ] Bar
+		[ ] Foo
+	`))
+	tl.Swap(1, 0)
+	assert.Equal(t, tl.String(), heredoc.Doc(`
+		[ ] Bar
+		[ ] Baz
+		[ ] Foo
+	`))
+}

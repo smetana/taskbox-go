@@ -1,9 +1,9 @@
 package main
 
 import (
+	"fmt"
 	"github.com/nsf/termbox-go"
 	"github.com/smetana/editbox-go"
-	"fmt"
 	"strings"
 )
 
@@ -14,7 +14,7 @@ const (
 
 var cursors = map[int]rune{
 	modeNormal: '>',
-	modeMove: '@',
+	modeMove:   '@',
 }
 
 type TaskView struct {
@@ -246,11 +246,9 @@ func (tv *TaskView) MoveTaskDown() {
 	if tv.cursor >= len(tv.view)-1 {
 		return
 	}
-	index, _ := tv.SelectedTask()
-	task := tv.tasklist.Delete(index)
-	tv.calculate()
-	index, _ = tv.SelectedTask()
-	tv.tasklist.InsertAfter(index, task)
+	index1 := tv.view[tv.cursor]
+	index2 := tv.view[tv.cursor+1]
+	tv.tasklist.Swap(index1, index2)
 	tv.calculate()
 	tv.CursorDown()
 	tv.modified = true
@@ -260,17 +258,11 @@ func (tv *TaskView) MoveTaskUp() {
 	if tv.cursor <= 0 {
 		return
 	}
-	oldC := tv.cursor
-	index, _ := tv.SelectedTask()
-	task := tv.tasklist.Delete(index)
+	index1 := tv.view[tv.cursor]
+	index2 := tv.view[tv.cursor-1]
+	tv.tasklist.Swap(index1, index2)
 	tv.calculate()
-	// cursor may move if we delete last task
-	if oldC == tv.cursor {
-		tv.CursorUp()
-	}
-	index, _ = tv.SelectedTask()
-	tv.tasklist.InsertBefore(index, task)
-	tv.calculate()
+	tv.CursorUp()
 	tv.modified = true
 }
 

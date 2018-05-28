@@ -71,6 +71,10 @@ func (tasklist *TaskList) Delete(i int) Task {
 	return task
 }
 
+func (tasklist *TaskList) Swap(i, j int) {
+	tasklist.Tasks[i], tasklist.Tasks[j] = tasklist.Tasks[j], tasklist.Tasks[i]
+}
+
 func (tasklist *TaskList) Load(path string) error {
 	tasklist.Tasks = make([]Task, 0)
 
