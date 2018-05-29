@@ -18,16 +18,16 @@ func check(e error) {
 func help() {
 	termbox.Clear(0, 0)
 	editbox.Text(1, 0, 0, 0, 0, 0, `
-      Esc  Menu
+Esc,Enter  Menu
       k,↑  Cursor Up
       j,↓  Cursor Down
-      \,/  Append Task
-    Space  Toggle Status
-    Enter  Edit
-      <,←  Move Task Up
-      >,→  Move Task Down
+        /  Append Task
+        \  Edit Task
     +,Ins  Insert Task
     -,Del  Delete Task
+    Space  Toggle Status
+      <,←  Move Task Up
+      >,→  Move Task Down
     ~,Tab  Change Filter
      q,^Q  Quit
 `)
@@ -35,41 +35,101 @@ func help() {
 	termbox.PollEvent()
 }
 
+type menuItem struct {
+	text string
+	fn   func() bool
+}
+
 func menu(tv *TaskView) bool {
 	termbox.Clear(0, 0)
-	menu := editbox.Select(
-		2, 2, 20, 10,
+	_, task := tv.SelectedTask()
+	editbox.Label(1, 1, 0, 0|termbox.AttrBold, 0, task.String())
+
+	menu := []menuItem{
+		{"Current Task: Toggle", func() bool {
+			tv.ToggleTask()
+			return true
+		}},
+		{"Current Task: Edit", func() bool {
+			tv.render()
+			tv.EditTask()
+			return true
+		}},
+		{"Current Task: Delete", func() bool {
+			tv.DeleteTask()
+			return true
+		}},
+		{"Current Task: Move Down", func() bool {
+			tv.MoveTaskDown()
+			return true
+		}},
+		{"Current Task: Move Up", func() bool {
+			tv.MoveTaskUp()
+			return true
+		}},
+		{"", nil},
+		{"New Task: Append", func() bool {
+			tv.render()
+			tv.AppendTask()
+			return true
+		}},
+		{"New Task: Insert", func() bool {
+			tv.render()
+			tv.InsertTask()
+			return true
+		}},
+		{"", nil},
+		{"Tasklist: Show Open", func() bool {
+			tv.Filter(StatusOpen)
+			return true
+		}},
+		{"Tasklist: Show Closed", func() bool {
+			tv.Filter(StatusClosed)
+			return true
+		}},
+		{"Taskiist: Show All", func() bool {
+			tv.Filter(StatusAll)
+			return true
+		}},
+		{"", nil},
+		{"Continue: Do Nothing", func() bool {
+			return true
+		}},
+		{"Help", func() bool {
+			help()
+			return true
+		}},
+		{"", nil},
+		{"Exit & Save", func() bool {
+			tv.tasklist.Save(tv.tasklist.path)
+			return false
+		}},
+		{"Exit & Don't Save", func() bool {
+			tv.tasklist.modified = false
+			return false
+		}},
+	}
+
+	menuText := make([]string, 0)
+	for _, item := range menu {
+		menuText = append(menuText, item.text)
+	}
+
+	menuBox := editbox.Select(
+		1, 3, 24, 20,
 		0, 0, 0|termbox.AttrReverse, 0|termbox.AttrReverse,
-		[]string{
-			"Continue",
-			"",
-			"Filter: Open Tasks",
-			"Filter: Closed Tasks",
-			"Filter: All Tasks",
-			"",
-			"Exit & Save",
-			"Exit & Don't Save",
-		},
+		menuText,
 	)
-	ev := menu.WaitExit()
+	ev := menuBox.WaitExit()
 	if ev.Key == termbox.KeyEsc {
 		return true
 	}
-	switch menu.Text() {
-	case "Filter: Open Tasks":
-		tv.Filter(StatusOpen)
-	case "Filter: Closed Tasks":
-		tv.Filter(StatusClosed)
-	case "Filter: All Tasks":
-		tv.Filter(StatusAll)
-	case "Exit & Save":
-		tv.tasklist.Save(tv.tasklist.path)
-		return false
-	case "Exit & Don't Save":
-		tv.tasklist.modified = false
-		return false
+	for _, item := range menu {
+		if item.text == menuBox.Text() {
+			return item.fn()
+		}
 	}
-	return true
+	panic("Should not happen")
 }
 
 func confirm(msg string) bool {
@@ -120,36 +180,25 @@ func (tv *TaskView) mainLoop() {
 				tv.PageDown()
 			case ev.Key == termbox.KeyPgup:
 				tv.PageUp()
-			case ev.Key == termbox.KeyEsc:
+			case ev.Key == termbox.KeyEsc || ev.Key == termbox.KeyEnter:
 				if !menu(tv) {
 					return
 				}
-			case ev.Key == termbox.KeyTab ||
-				ev.Ch == '~' ||
-				ev.Ch == '`':
+			case ev.Key == termbox.KeyTab || ev.Ch == '~' || ev.Ch == '`':
 				tv.NextFilter()
-			case ev.Ch == 'n' ||
-				ev.Ch == '/' ||
-				ev.Ch == '\\':
+			case ev.Ch == '/':
 				tv.AppendTask()
-			case ev.Key == termbox.KeyInsert ||
-				ev.Ch == '+':
+			case ev.Key == termbox.KeyInsert || ev.Ch == '+':
 				tv.InsertTask()
-			case ev.Key == termbox.KeyEnter:
+			case ev.Ch == '\\':
 				tv.EditTask()
-			case ev.Key == termbox.KeyDelete ||
-				ev.Ch == '-':
-				_, t := tv.SelectedTask()
-				if t != nil && confirm("Delete \""+t.Description+"\"?") {
-					tv.DeleteTask()
-				}
+			case ev.Key == termbox.KeyDelete || ev.Ch == '-':
+				tv.DeleteTask()
 			case ev.Key == termbox.KeySpace:
 				tv.ToggleTask()
-			case ev.Key == termbox.KeyArrowRight ||
-				ev.Ch == '>':
+			case ev.Key == termbox.KeyArrowRight || ev.Ch == '>':
 				tv.MoveTaskDown()
-			case ev.Key == termbox.KeyArrowLeft ||
-				ev.Ch == '<':
+			case ev.Key == termbox.KeyArrowLeft || ev.Ch == '<':
 				tv.MoveTaskUp()
 			case ev.Key == termbox.KeyF1 ||
 				ev.Ch == '?' ||

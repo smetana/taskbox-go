@@ -151,7 +151,7 @@ func (tv *TaskView) NewTask() Task {
 
 func (tv *TaskView) DeleteTask() {
 	index, task := tv.SelectedTask()
-	if task != nil {
+	if task != nil && (task.Description == "" || confirm("Delete \""+task.Description+"\"?")) {
 		tv.tasklist.Delete(index)
 		tv.calculate()
 	}
@@ -160,27 +160,22 @@ func (tv *TaskView) DeleteTask() {
 func (tv *TaskView) EditTask() (int, termbox.Event) {
 	index, task := tv.SelectedTask()
 
-	if task == nil {
-		return tv.AppendTask()
-	}
-
 	// TODO Refactor to Update by TaskList
 	oldDescription := task.Description
 	input := editbox.Input(tv.x+6, tv.CursorToY(), tv.w-3, 0, 0)
 	input.SetText(task.Description)
 	ev := input.WaitExit()
-
-	if input.Text() == "" {
+	newDescription := input.Text()
+	if ev.Key == termbox.KeyEsc && oldDescription == "" && newDescription == "" {
 		tv.DeleteTask()
 		index = -1
-		tv.tasklist.modified = true
-	} else {
-		task.Description = input.Text()
-		if oldDescription != task.Description {
-			tv.tasklist.modified = true
-		}
 	}
-
+	if ev.Key == termbox.KeyEnter {
+		task.Description = newDescription
+	}
+	if oldDescription != newDescription {
+		tv.tasklist.modified = true
+	}
 	tv.calculate()
 	tv.render()
 	termbox.HideCursor()
