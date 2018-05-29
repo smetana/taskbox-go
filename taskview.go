@@ -189,16 +189,17 @@ func (tv *TaskView) EditTask() (int, termbox.Event) {
 }
 
 func (tv *TaskView) InsertTask() (int, termbox.Event) {
-	index, task := tv.SelectedTask()
-
-	if task == nil {
-		return tv.AppendTask()
+	for {
+		index, _ := tv.SelectedTask()
+		tv.tasklist.Insert(index, tv.NewTask())
+		tv.calculate()
+		tv.render()
+		_, ev := tv.EditTask()
+		if ev.Key == termbox.KeyEsc {
+			return index, ev
+		}
+		tv.CursorDown()
 	}
-
-	tv.tasklist.Insert(index, tv.NewTask())
-	tv.calculate()
-	tv.render()
-	return tv.EditTask()
 }
 
 func (tv *TaskView) AppendTask() (int, termbox.Event) {
