@@ -14,13 +14,11 @@ type TaskView struct {
 	x, y           int
 	w, h           int
 	cursor, scroll int
-	modified       bool
 }
 
 func NewTaskView(tasklist *TaskList) *TaskView {
 	tv := new(TaskView)
 	tv.tasklist = tasklist
-	tv.modified = false
 	tv.Filter(StatusAll)
 	return tv
 }
@@ -44,6 +42,20 @@ func (tv *TaskView) Filter(s Status) {
 	tv.scroll = 0
 	tv.filter = s
 	tv.calculate()
+}
+
+func (tv *TaskView) NextFilter() {
+	filters := [3]rune{' ', 'X', '*'}
+	for i, f := range filters {
+		if tv.filter == Status(f) {
+			i++
+			if i >= len(filters) {
+				i = 0
+			}
+			tv.Filter(Status(filters[i]))
+			return
+		}
+	}
 }
 
 func (tv *TaskView) String() string {
@@ -142,7 +154,6 @@ func (tv *TaskView) DeleteTask() {
 	if task != nil {
 		tv.tasklist.Delete(index)
 		tv.calculate()
-		tv.modified = true
 	}
 }
 
@@ -153,6 +164,7 @@ func (tv *TaskView) EditTask() (*Task, termbox.Event) {
 		return tv.AppendTask()
 	}
 
+	// TODO Refactor to Update by TaskList
 	oldDescription := task.Description
 	input := editbox.Input(tv.x+6, tv.CursorToY(), tv.w-3, 0, 0)
 	input.SetText(task.Description)
@@ -161,11 +173,11 @@ func (tv *TaskView) EditTask() (*Task, termbox.Event) {
 	if input.Text() == "" {
 		tv.DeleteTask()
 		task = nil
-		tv.modified = true
+		tv.tasklist.modified = true
 	} else {
 		task.Description = input.Text()
 		if oldDescription != task.Description {
-			tv.modified = true
+			tv.tasklist.modified = true
 		}
 	}
 
@@ -176,33 +188,22 @@ func (tv *TaskView) EditTask() (*Task, termbox.Event) {
 	return task, ev
 }
 
-func (tv *TaskView) InsertTaskBefore() (*Task, termbox.Event) {
+func (tv *TaskView) InsertTask() (*Task, termbox.Event) {
 	index, task := tv.SelectedTask()
 
 	if task == nil {
 		return tv.AppendTask()
 	}
 
-	tv.tasklist.InsertBefore(index, tv.NewTask())
-	tv.modified = true
+	tv.tasklist.Insert(index, tv.NewTask())
 	tv.calculate()
 	tv.render()
 	return tv.EditTask()
 }
 
-func (tv *TaskView) InsertTaskAfter() (*Task, termbox.Event) {
-	if tv.cursor == len(tv.view)-1 {
-		return tv.AppendTask()
-	} else {
-		tv.CursorDown()
-		return tv.InsertTaskBefore()
-	}
-}
-
 func (tv *TaskView) AppendTask() (*Task, termbox.Event) {
 	for {
 		tv.tasklist.Append(tv.NewTask())
-		tv.modified = true
 		tv.calculate()
 		tv.cursor = len(tv.view) - 1
 		tv.scrollToCursor()
@@ -224,7 +225,7 @@ func (tv *TaskView) ToggleTask() {
 	} else {
 		task.Status = StatusOpen
 	}
-	tv.modified = true
+	tv.tasklist.modified = true
 	tv.calculate()
 }
 
@@ -237,7 +238,6 @@ func (tv *TaskView) MoveTaskDown() {
 	tv.tasklist.Swap(index1, index2)
 	tv.calculate()
 	tv.CursorDown()
-	tv.modified = true
 }
 
 func (tv *TaskView) MoveTaskUp() {
@@ -249,33 +249,4 @@ func (tv *TaskView) MoveTaskUp() {
 	tv.tasklist.Swap(index1, index2)
 	tv.calculate()
 	tv.CursorUp()
-	tv.modified = true
-}
-
-func (tv *TaskView) ShowMenu() bool {
-	termbox.Clear(0, 0)
-	menu := editbox.Select(
-		2, 2, 15, 10,
-		0, 0, 0|termbox.AttrReverse, 0|termbox.AttrReverse,
-		[]string{
-			"Open Tasks",
-			"Closed Tasks",
-			"All Tasks",
-			"",
-			"Quit",
-		},
-	)
-	menu.WaitExit()
-
-	switch menu.SelectedIndex() {
-	case 0:
-		tv.Filter(StatusOpen)
-	case 1:
-		tv.Filter(StatusClosed)
-	case 2:
-		tv.Filter(StatusAll)
-	case 4:
-		return false
-	}
-	return true
 }

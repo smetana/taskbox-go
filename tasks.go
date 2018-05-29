@@ -15,33 +15,61 @@ func check(e error) {
 	}
 }
 
-func getCell(x, y int) termbox.Cell {
-	w, _ := termbox.Size()
-	return termbox.CellBuffer()[y*w+x]
+func help() {
+	termbox.Clear(0, 0)
+	editbox.Text(1, 0, 0, 0, 0, 0, `
+      Esc  Menu
+      k,↑  Cursor Up
+      j,↓  Cursor Down
+      \,/  Append Task
+    Space  Toggle Status
+    Enter  Edit
+      <,←  Move Task Up
+      >,→  Move Task Down
+    +,Ins  Insert Task
+    -,Del  Delete Task
+    ~,Tab  Change Filter
+     q,^Q  Quit
+`)
+	termbox.Flush()
+	termbox.PollEvent()
 }
 
-func setCellColors(x, y int, fg, bg termbox.Attribute) {
-	cell := getCell(x, y)
-	termbox.SetCell(x, y, cell.Ch, fg, bg)
-}
-
-func printHelp(x, y int, s string) {
-	i := 0
-	shortcut := false
-	fg := termbox.ColorDefault
-	for _, r := range s {
-		if r == '_' {
-			shortcut = !shortcut
-		} else {
-			if shortcut {
-				fg = termbox.ColorDefault | termbox.AttrUnderline
-			} else {
-				fg = termbox.ColorDefault
-			}
-			termbox.SetCell(x+i, y, r, fg, 0)
-			i++
-		}
+func menu(tv *TaskView) bool {
+	termbox.Clear(0, 0)
+	menu := editbox.Select(
+		2, 2, 20, 10,
+		0, 0, 0|termbox.AttrReverse, 0|termbox.AttrReverse,
+		[]string{
+			"Continue",
+			"",
+			"Filter: Open Tasks",
+			"Filter: Closed Tasks",
+			"Filter: All Tasks",
+			"",
+			"Exit & Save",
+			"Exit & Don't Save",
+		},
+	)
+	ev := menu.WaitExit()
+	if ev.Key == termbox.KeyEsc {
+		return true
 	}
+	switch menu.Text() {
+	case "Filter: Open Tasks":
+		tv.Filter(StatusOpen)
+	case "Filter: Closed Tasks":
+		tv.Filter(StatusClosed)
+	case "Filter: All Tasks":
+		tv.Filter(StatusAll)
+	case "Exit & Save":
+		tv.tasklist.Save(tv.tasklist.path)
+		return false
+	case "Exit & Don't Save":
+		tv.tasklist.modified = false
+		return false
+	}
+	return true
 }
 
 func confirm(msg string) bool {
@@ -51,27 +79,27 @@ func confirm(msg string) bool {
 
 func (tv *TaskView) render() {
 	termbox.Clear(0, 0)
-
-	// TODO Optimization: Move block below to separate event
 	w, h := termbox.Size()
-	tv.w = int(w/2) - 2 // minus padding
-	tv.h = h - 5        // minus title, help line, and margins
+	tv.w = int(w/2) - 2 // minus margins
+	tv.h = h - 4        // minus status and margins
 	tv.x = 1
-	tv.y = 4
-
-	var title strings.Builder
-	fmt.Fprintf(&title, "%s Tasks(%d)", tv.filter.String(), len(tv.view))
-	if tv.modified {
-		fmt.Fprintf(&title, " (modified)")
-	}
-	editbox.Label(1, 2, 0, 0, 0, title.String())
-
+	tv.y = 1
 	editbox.Text(tv.x, tv.y, 0, 0, 0, 0, tv.String())
 
-	printHelp(0, 0,
-		"_m_enu  _n_ew  _i_nsert  _a_fter  _e_dit  "+
-			"_d_elete  _t_oggle  _q_uit",
-	)
+	// status line
+	var s strings.Builder
+	var i int
+	if len(tv.view) == 0 {
+		i = 0
+	} else {
+		i = tv.cursor + 1
+	}
+	fmt.Fprintf(&s, "%d/%d ", i, len(tv.view))
+	fmt.Fprintf(&s, "%s Tasks", tv.filter.String())
+	if tv.tasklist.modified {
+		fmt.Fprintf(&s, " - Modified")
+	}
+	editbox.Label(1, h-1, 0, 0, 0, s.String())
 
 	termbox.Flush()
 }
@@ -82,67 +110,57 @@ func (tv *TaskView) mainLoop() {
 		switch ev.Type {
 		case termbox.EventKey:
 			switch {
-			case ev.Key == termbox.KeyArrowDown:
+			case ev.Key == termbox.KeyArrowDown ||
+				ev.Ch == 'j':
 				tv.CursorDown()
-			case ev.Key == termbox.KeyArrowUp:
+			case ev.Key == termbox.KeyArrowUp ||
+				ev.Ch == 'k':
 				tv.CursorUp()
 			case ev.Key == termbox.KeyPgdn:
 				tv.PageDown()
 			case ev.Key == termbox.KeyPgup:
 				tv.PageUp()
-			case ev.Key == termbox.KeyEsc ||
-				ev.Ch == 'm' ||
-				ev.Ch == 'M' ||
-				ev.Ch == 'ь' ||
-				ev.Ch == 'Ь':
-				if !tv.ShowMenu() {
+			case ev.Key == termbox.KeyEsc:
+				if !menu(tv) {
 					return
 				}
+			case ev.Key == termbox.KeyTab ||
+				ev.Ch == '~' ||
+				ev.Ch == '`':
+				tv.NextFilter()
 			case ev.Ch == 'n' ||
-				ev.Ch == 'N' ||
-				ev.Ch == 'т' ||
-				ev.Ch == 'Т':
+				ev.Ch == '/' ||
+				ev.Ch == '\\':
 				tv.AppendTask()
 			case ev.Key == termbox.KeyInsert ||
-				ev.Ch == 'i' ||
-				ev.Ch == 'I' ||
-				ev.Ch == 'ш' ||
-				ev.Ch == 'Ш':
-				tv.InsertTaskBefore()
-			case ev.Ch == 'a' ||
-				ev.Ch == 'A' ||
-				ev.Ch == 'ф' ||
-				ev.Ch == 'Ф':
-				tv.InsertTaskAfter()
-			case ev.Key == termbox.KeyEnter ||
-				ev.Ch == 'e' ||
-				ev.Ch == 'E' ||
-				ev.Ch == 'у' ||
-				ev.Ch == 'У':
+				ev.Ch == '+':
+				tv.InsertTask()
+			case ev.Key == termbox.KeyEnter:
 				tv.EditTask()
 			case ev.Key == termbox.KeyDelete ||
-				ev.Ch == 'd' ||
-				ev.Ch == 'D' ||
-				ev.Ch == 'в' ||
-				ev.Ch == 'В':
+				ev.Ch == '-':
 				_, t := tv.SelectedTask()
 				if t != nil && confirm("Delete \""+t.Description+"\"?") {
 					tv.DeleteTask()
 				}
-			case ev.Key == termbox.KeySpace ||
-				ev.Ch == 't' ||
-				ev.Ch == 'T' ||
-				ev.Ch == 'е' ||
-				ev.Ch == 'Е':
+			case ev.Key == termbox.KeySpace:
 				tv.ToggleTask()
-			case ev.Key == termbox.KeyArrowRight:
+			case ev.Key == termbox.KeyArrowRight ||
+				ev.Ch == '>':
 				tv.MoveTaskDown()
-			case ev.Key == termbox.KeyArrowLeft:
+			case ev.Key == termbox.KeyArrowLeft ||
+				ev.Ch == '<':
 				tv.MoveTaskUp()
-			case ev.Ch == 'q' ||
-				ev.Ch == 'Q' ||
-				ev.Ch == 'й' ||
-				ev.Ch == 'Й':
+			case ev.Key == termbox.KeyF1 ||
+				ev.Ch == '?' ||
+				ev.Ch == '/' ||
+				ev.Ch == 'h' ||
+				ev.Ch == 'H':
+				help()
+			case ev.Key == termbox.KeyCtrlQ ||
+				ev.Key == termbox.KeyCtrlX ||
+				ev.Ch == 'q' ||
+				ev.Ch == 'Q':
 				return // Quit
 			default:
 				// do nothing
@@ -168,10 +186,9 @@ func main() {
 	}
 	filename := flagset.Args()[0]
 	tasklist := &TaskList{}
-	err := tasklist.Load(filename)
-	check(err)
+	tasklist.Load(filename)
 
-	err = termbox.Init()
+	err := termbox.Init()
 	check(err)
 	termbox.SetInputMode(termbox.InputEsc)
 	termbox.HideCursor()
@@ -181,9 +198,8 @@ func main() {
 	tv.render()
 	tv.mainLoop()
 
-	if tv.modified && confirm("Save "+filename) {
-		err = tasklist.Save(filename)
-		check(err)
+	if tv.tasklist.modified && confirm("Save "+filename) {
+		tasklist.Save(filename)
 	}
 
 	termbox.Close()

@@ -71,8 +71,8 @@ func TestTVInsertAndFilter(t *testing.T) {
 	tv := tvFixture(3)
 	tv.h = 100
 	tl := tv.tasklist
-	tl.InsertBefore(1, Task{Description: "qux", Status: StatusClosed})
-	tl.InsertAfter(2, Task{Description: "quux", Status: StatusClosed})
+	tl.Insert(1, Task{Description: "qux", Status: StatusClosed})
+	tl.Insert(3, Task{Description: "quux", Status: StatusClosed})
 	tv.calculate()
 	assert.Equal(t, tv.String(), heredoc.Doc(`
 	> [ ] foo

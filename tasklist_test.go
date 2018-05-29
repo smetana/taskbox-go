@@ -34,8 +34,8 @@ func TestTLAppend(t *testing.T) {
 
 func TestTLInsert(t *testing.T) {
 	tl := tasklistFixture()
-	tl.InsertAfter(1, Task{Description: "Qux", Status: StatusOpen})
-	tl.InsertBefore(1, Task{Description: "Xyz", Status: StatusOpen})
+	tl.Insert(2, Task{Description: "Qux", Status: StatusOpen})
+	tl.Insert(1, Task{Description: "Xyz", Status: StatusOpen})
 	assert.Equal(t, tl.String(), heredoc.Doc(`
 		[ ] Foo
 		[ ] Xyz
