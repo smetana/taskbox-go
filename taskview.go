@@ -157,8 +157,8 @@ func (tv *TaskView) DeleteTask() {
 	}
 }
 
-func (tv *TaskView) EditTask() (*Task, termbox.Event) {
-	_, task := tv.SelectedTask()
+func (tv *TaskView) EditTask() (int, termbox.Event) {
+	index, task := tv.SelectedTask()
 
 	if task == nil {
 		return tv.AppendTask()
@@ -172,7 +172,7 @@ func (tv *TaskView) EditTask() (*Task, termbox.Event) {
 
 	if input.Text() == "" {
 		tv.DeleteTask()
-		task = nil
+		index = -1
 		tv.tasklist.modified = true
 	} else {
 		task.Description = input.Text()
@@ -185,10 +185,10 @@ func (tv *TaskView) EditTask() (*Task, termbox.Event) {
 	tv.render()
 	termbox.HideCursor()
 
-	return task, ev
+	return index, ev
 }
 
-func (tv *TaskView) InsertTask() (*Task, termbox.Event) {
+func (tv *TaskView) InsertTask() (int, termbox.Event) {
 	index, task := tv.SelectedTask()
 
 	if task == nil {
@@ -201,16 +201,16 @@ func (tv *TaskView) InsertTask() (*Task, termbox.Event) {
 	return tv.EditTask()
 }
 
-func (tv *TaskView) AppendTask() (*Task, termbox.Event) {
+func (tv *TaskView) AppendTask() (int, termbox.Event) {
 	for {
 		tv.tasklist.Append(tv.NewTask())
 		tv.calculate()
 		tv.cursor = len(tv.view) - 1
 		tv.scrollToCursor()
 		tv.render()
-		task, ev := tv.EditTask()
+		index, ev := tv.EditTask()
 		if ev.Key == termbox.KeyEsc {
-			return task, ev
+			return index, ev
 		}
 	}
 }
