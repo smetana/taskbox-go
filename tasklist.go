@@ -2,6 +2,7 @@ package main
 
 import (
 	"bufio"
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"os"
@@ -47,6 +48,17 @@ func (tasklist *TaskList) String() string {
 	return s.String()
 }
 
+func (tasklist *TaskList) Parse(s string) (Task, error) {
+	t := Task{}
+	if len(s) > 4 && s[0] == '[' && s[2] == ']' {
+		t.Status = Status(s[1])
+		t.Description = s[4:]
+		return t, nil
+	} else {
+		return t, errors.New("Not a Task: " + s)
+	}
+}
+
 func (tasklist *TaskList) Append(task Task) {
 	tasklist.Tasks = append(tasklist.Tasks, task)
 	tasklist.modified = true
@@ -87,11 +99,10 @@ func (tasklist *TaskList) Load(path string) {
 
 	scanner := bufio.NewScanner(f)
 	for scanner.Scan() {
-		s := scanner.Text()
-		t := Task{}
-		t.Status = Status(s[1])
-		t.Description = s[4:]
-		tasklist.Append(t)
+		task, err := tasklist.Parse(scanner.Text())
+		if err == nil {
+			tasklist.Append(task)
+		}
 	}
 	check(scanner.Err())
 	tasklist.modified = false

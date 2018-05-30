@@ -23,6 +23,27 @@ func tasklistFixture() *TaskList {
 
 // ----------------------------------------------------------------------------
 
+func TestTLParse(t *testing.T) {
+	tl := &TaskList{}
+	task, err := tl.Parse("[ ] foo")
+	assert.Equal(t, err, nil)
+	assert.Equal(t, task, Task{
+		Description: "foo",
+		Status: StatusOpen,
+	})
+
+	task, err = tl.Parse("[X] bar")
+	assert.Equal(t, err, nil)
+	assert.Equal(t, task, Task{
+		Description: "bar",
+		Status: StatusClosed,
+	})
+
+	task, err = tl.Parse("foobar")
+	assert.Equal(t, err.Error(), "Not a Task: foobar")
+	assert.Equal(t, task, Task{})
+}
+
 func TestTLAppend(t *testing.T) {
 	tl := tasklistFixture()
 	assert.Equal(t, tl.String(), heredoc.Doc(`
