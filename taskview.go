@@ -26,7 +26,9 @@ func NewTaskView(tasklist *TaskList) *TaskView {
 func (tv *TaskView) calculate() {
 	tv.view = make([]int, 0)
 	for i, t := range tv.tasklist.Tasks {
-		if tv.filter == StatusAll || t.Status == tv.filter {
+		if t.Status == StatusComment ||
+			tv.filter == StatusAll ||
+			t.Status == tv.filter {
 			tv.view = append(tv.view, i)
 		}
 	}
@@ -213,7 +215,7 @@ func (tv *TaskView) AppendTask() (int, termbox.Event) {
 
 func (tv *TaskView) ToggleTask() {
 	_, task := tv.SelectedTask()
-	if task == nil {
+	if task == nil || task.Status == StatusComment {
 		return
 	}
 	if task.Status == StatusOpen {

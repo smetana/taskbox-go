@@ -2,7 +2,6 @@ package main
 
 import (
 	"bufio"
-	"errors"
 	"fmt"
 	"io/ioutil"
 	"os"
@@ -12,9 +11,10 @@ import (
 type Status rune
 
 const (
-	StatusAll    Status = '*'
-	StatusOpen          = ' '
-	StatusClosed        = 'X'
+	StatusAll     Status = '*'
+	StatusOpen           = ' '
+	StatusClosed         = 'X'
+	StatusComment        = '#'
 )
 
 func (s Status) String() string {
@@ -31,7 +31,11 @@ type Task struct {
 }
 
 func (task *Task) String() string {
-	return fmt.Sprintf("[%c] %s", task.Status, task.Description)
+	if task.Status == StatusComment {
+		return task.Description
+	} else {
+		return fmt.Sprintf("[%c] %s", task.Status, task.Description)
+	}
 }
 
 type TaskList struct {
@@ -48,15 +52,16 @@ func (tasklist *TaskList) String() string {
 	return s.String()
 }
 
-func (tasklist *TaskList) Parse(s string) (Task, error) {
+func (tasklist *TaskList) Parse(s string) Task {
 	t := Task{}
 	if len(s) > 4 && s[0] == '[' && s[2] == ']' {
 		t.Status = Status(s[1])
 		t.Description = s[4:]
-		return t, nil
 	} else {
-		return t, errors.New("Not a Task: " + s)
+		t.Status = StatusComment
+		t.Description = s
 	}
+	return t
 }
 
 func (tasklist *TaskList) Append(task Task) {
@@ -99,10 +104,8 @@ func (tasklist *TaskList) Load(path string) {
 
 	scanner := bufio.NewScanner(f)
 	for scanner.Scan() {
-		task, err := tasklist.Parse(scanner.Text())
-		if err == nil {
-			tasklist.Append(task)
-		}
+		t := tasklist.Parse(scanner.Text())
+		tasklist.Append(t)
 	}
 	check(scanner.Err())
 	tasklist.modified = false
