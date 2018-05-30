@@ -133,8 +133,10 @@ func menu(tv *TaskView) bool {
 }
 
 func confirm(msg string) bool {
-	termbox.Clear(0, 0)
-	return editbox.Confirm(1, 1, 0, 0, msg)
+	w, h := termbox.Size()
+	// Clear line
+	editbox.Label(1, h-1, w, 0, 0, "")
+	return editbox.Confirm(1, h-1, 0|termbox.AttrBold, 0, msg)
 }
 
 func (tv *TaskView) render() {
