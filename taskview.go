@@ -10,6 +10,7 @@ import (
 const (
 	modeEdit int = iota
 	modeInsert
+	modeComment
 )
 
 type TaskView struct {
@@ -156,7 +157,9 @@ func (tv *TaskView) NewTask() Task {
 
 func (tv *TaskView) DeleteTask() {
 	index, task := tv.SelectedTask()
-	if task != nil && (task.Description == "" || confirm("Delete \""+task.Description+"\"?")) {
+	if task != nil && (task.Description == "" ||
+					   task.Status == StatusComment ||
+					   confirm("Delete \""+task.Description+"\"?")) {
 		tv.tasklist.Delete(index)
 		tv.calculate()
 	}
@@ -188,6 +191,10 @@ func (tv *TaskView) doEdit(mode int) (int, termbox.Event) {
 	if oldDescription != newDescription {
 		tv.tasklist.modified = true
 	}
+	if mode == modeComment {
+		taskFromComment := tv.tasklist.Parse(newDescription)
+		tv.tasklist.Tasks[index] = taskFromComment
+	}
 	tv.calculate()
 	tv.render()
 	termbox.HideCursor()
@@ -197,8 +204,7 @@ func (tv *TaskView) doEdit(mode int) (int, termbox.Event) {
 
 func (tv *TaskView) EditTask() (int, termbox.Event) {
 	for {
-		index, _ := tv.SelectedTask()
-		_, ev := tv.doEdit(modeEdit)
+		index, ev := tv.doEdit(modeEdit)
 		if ev.Key == termbox.KeyEsc {
 			return index, ev
 		}
@@ -217,6 +223,21 @@ func (tv *TaskView) InsertTask() (int, termbox.Event) {
 		tv.calculate()
 		tv.render()
 		_, ev := tv.doEdit(modeInsert)
+		if ev.Key == termbox.KeyEsc {
+			return index, ev
+		}
+		tv.CursorDown()
+	}
+}
+
+func (tv *TaskView) InsertComment() (int, termbox.Event) {
+	for {
+		index, _ := tv.SelectedTask()
+		task := Task{Status: StatusComment}
+		tv.tasklist.Insert(index, task)
+		tv.calculate()
+		tv.render()
+		_, ev := tv.doEdit(modeComment)
 		if ev.Key == termbox.KeyEsc {
 			return index, ev
 		}

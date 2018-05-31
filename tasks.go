@@ -95,6 +95,10 @@ func menu(tv *TaskView) bool {
 		{"Continue: Do Nothing", func() bool {
 			return true
 		}},
+		{"Insert Text", func() bool {
+			tv.InsertComment()
+			return true
+		}},
 		{"Help", func() bool {
 			help()
 			return true
@@ -206,6 +210,8 @@ func (tv *TaskView) mainLoop() {
 				tv.MoveTaskDown()
 			case ev.Key == termbox.KeyArrowLeft || ev.Ch == '<':
 				tv.MoveTaskUp()
+			case ev.Ch == '#':
+				tv.InsertComment()
 			case ev.Key == termbox.KeyF1 ||
 				ev.Ch == '?' ||
 				ev.Ch == '/' ||
