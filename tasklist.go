@@ -54,9 +54,13 @@ func (tasklist *TaskList) String() string {
 
 func (tasklist *TaskList) Parse(s string) Task {
 	t := Task{}
-	if len(s) > 4 && s[0] == '[' && s[2] == ']' {
+	if len(s) >= 3 && s[0] == '[' && s[2] == ']' {
 		t.Status = Status(s[1])
-		t.Description = s[4:]
+		if len(s) > 4 {
+			t.Description = s[4:]
+		} else {
+			t.Description = ""
+		}
 	} else {
 		t.Status = StatusComment
 		t.Description = s

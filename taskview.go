@@ -9,7 +9,6 @@ import (
 
 const (
 	modeEdit int = iota
-	modeAppend
 	modeInsert
 )
 
@@ -178,7 +177,7 @@ func (tv *TaskView) doEdit(mode int) (int, termbox.Event) {
 	input.SetText(task.Description)
 	ev := input.WaitExit()
 	newDescription := input.Text()
-	if mode == modeAppend && ev.Key == termbox.KeyEsc &&
+	if mode == modeInsert && ev.Key == termbox.KeyEsc &&
 		oldDescription == "" && newDescription == "" {
 		tv.DeleteTask()
 		index = -1
@@ -232,7 +231,7 @@ func (tv *TaskView) AppendTask() (int, termbox.Event) {
 		tv.cursor = len(tv.view) - 1
 		tv.scrollToCursor()
 		tv.render()
-		index, ev := tv.doEdit(modeAppend)
+		index, ev := tv.doEdit(modeInsert)
 		if ev.Key == termbox.KeyEsc {
 			return index, ev
 		}

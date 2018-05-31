@@ -37,6 +37,30 @@ func TestTLParse(t *testing.T) {
 		Status:      StatusClosed,
 	})
 
+	task = tl.Parse("[X] ")
+	assert.Equal(t, task, Task{
+		Description: "",
+		Status:      StatusClosed,
+	})
+
+	task = tl.Parse("[X]")
+	assert.Equal(t, task, Task{
+		Description: "",
+		Status:      StatusClosed,
+	})
+
+	task = tl.Parse("[X")
+	assert.Equal(t, task, Task{
+		Description: "[X",
+		Status:      StatusComment,
+	})
+
+	task = tl.Parse("")
+	assert.Equal(t, task, Task{
+		Description: "",
+		Status:      StatusComment,
+	})
+
 	task = tl.Parse("  baz  ")
 	assert.Equal(t, task, Task{
 		Description: "  baz  ",
