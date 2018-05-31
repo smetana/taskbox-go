@@ -18,6 +18,8 @@ func check(e error) {
 func help() {
 	termbox.Clear(0, 0)
 	editbox.Text(1, 0, 0, 0, 0, 0, `
+           Outdated Help
+
 Esc,Enter  Menu
       k,↑  Cursor Up
       j,↓  Cursor Down
@@ -35,6 +37,7 @@ Esc,Enter  Menu
 	termbox.PollEvent()
 }
 
+/*
 type menuItem struct {
 	text string
 	fn   func() bool
@@ -135,101 +138,63 @@ func menu(tv *TaskView) bool {
 	}
 	panic("Should not happen")
 }
+*/
 
-func confirm(msg string) bool {
+func confirm(msg string) (bool, termbox.Event) {
 	w, h := termbox.Size()
 	// Clear line
 	editbox.Label(1, h-1, w, 0, 0, "")
 	return editbox.Confirm(1, h-1, 0|termbox.AttrBold, 0, msg)
 }
 
-func (tv *TaskView) render() {
+func (tb *TaskBox) render() {
 	termbox.Clear(0, 0)
 	w, h := termbox.Size()
-	tv.w = int(w/2) - 2 // minus margins
-	tv.h = h - 4        // minus status and margins
-	tv.x = 1
-	tv.y = 1
-	editbox.Text(tv.x, tv.y, 0, 0, 0, 0, tv.String())
+	tb.w = int(w/2) - 2 // minus margins
+	tb.h = h - 4        // minus status and margins
+	tb.x = 1
+	tb.y = 1
+	editbox.Text(tb.x, tb.y, 0, 0, 0, 0, tb.String())
 
 	// status line
 	var s strings.Builder
-	var i int
-	if len(tv.view) == 0 {
-		i = 0
-	} else {
-		i = tv.cursor + 1
-	}
-	fmt.Fprintf(&s, "%d/%d ", i, len(tv.view))
-	fmt.Fprintf(&s, "%s Tasks", tv.filter.String())
-	if tv.tasklist.modified {
-		fmt.Fprintf(&s, " - Modified")
+	fmt.Fprintf(&s, "Mode:%s", tb.mode.String())
+	fmt.Fprintf(&s, "; Filter:%s", tb.filter.String())
+	if tb.modified {
+		fmt.Fprintf(&s, "; Modified")
 	}
 	editbox.Label(1, h-1, 0, 0, 0, s.String())
+
+	if tb.editor != nil {
+		tb.editor.Render()
+	}
 
 	termbox.Flush()
 }
 
-func (tv *TaskView) mainLoop() {
-	for {
+func (tb *TaskBox) mainLoop() {
+	for tb.mode != modeExit {
 		ev := termbox.PollEvent()
-		switch ev.Type {
-		case termbox.EventKey:
-			switch {
-			case ev.Key == termbox.KeyArrowDown ||
-				ev.Ch == 'j':
-				if tv.cursor == len(tv.view)-1 {
-					tv.AppendTask()
-				} else {
-					tv.CursorDown()
-				}
-			case ev.Key == termbox.KeyArrowUp ||
-				ev.Ch == 'k':
-				tv.CursorUp()
-			case ev.Key == termbox.KeyPgdn:
-				tv.PageDown()
-			case ev.Key == termbox.KeyPgup:
-				tv.PageUp()
-			case ev.Key == termbox.KeyEsc || ev.Key == termbox.KeyEnter:
-				if !menu(tv) {
-					return
-				}
-			case ev.Key == termbox.KeyTab || ev.Ch == '~' || ev.Ch == '`':
-				tv.NextFilter()
-			case ev.Ch == '/':
-				tv.AppendTask()
-			case ev.Key == termbox.KeyInsert || ev.Ch == '+':
-				tv.InsertTask()
-			case ev.Ch == '\\':
-				tv.EditTask()
-			case ev.Key == termbox.KeyDelete || ev.Ch == '-':
-				tv.DeleteTask()
-			case ev.Key == termbox.KeySpace:
-				tv.ToggleTask()
-			case ev.Key == termbox.KeyArrowRight || ev.Ch == '>':
-				tv.MoveTaskDown()
-			case ev.Key == termbox.KeyArrowLeft || ev.Ch == '<':
-				tv.MoveTaskUp()
-			case ev.Ch == '#':
-				tv.InsertComment()
-			case ev.Key == termbox.KeyF1 ||
-				ev.Ch == '?' ||
-				ev.Ch == '/' ||
-				ev.Ch == 'h' ||
-				ev.Ch == 'H':
-				help()
-			case ev.Key == termbox.KeyCtrlQ ||
-				ev.Key == termbox.KeyCtrlX ||
-				ev.Ch == 'q' ||
-				ev.Ch == 'Q':
-				return // Quit
-			default:
-				// do nothing
-			}
-		case termbox.EventError:
+		if ev.Type == termbox.EventError {
 			panic(ev.Err)
 		}
-		tv.render()
+		if ev.Type == termbox.EventInterrupt {
+			tb.mode = modeExit
+		}
+		switch tb.mode {
+		case modeTask:
+			tb.HandleTaskEvent(ev)
+		case modeEdit:
+			tb.HandleEditEvent(ev)
+		}
+		if tb.mode == modeExit && tb.modified {
+			yes, ev := confirm("Save " + tb.path)
+			if ev.Key == termbox.KeyEsc {
+				tb.mode = modeTask
+			} else if yes {
+				tb.Save(tb.path)
+			}
+		}
 	}
 }
 
@@ -246,22 +211,17 @@ func main() {
 		os.Exit(1)
 	}
 	filename := flagset.Args()[0]
-	tasklist := &TaskList{}
-	tasklist.Load(filename)
+	tb := &TaskBox{}
+	tb.Load(filename)
 
 	err := termbox.Init()
 	check(err)
 	termbox.SetInputMode(termbox.InputEsc)
 	termbox.HideCursor()
 
-	tv := NewTaskView(tasklist)
-	tv.Filter(StatusOpen)
-	tv.render()
-	tv.mainLoop()
-
-	if tv.tasklist.modified && confirm("Save "+filename) {
-		tasklist.Save(filename)
-	}
+	tb.Filter(StatusOpen)
+	tb.render()
+	tb.mainLoop()
 
 	termbox.Close()
 }
