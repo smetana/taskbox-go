@@ -7,6 +7,12 @@ import (
 	"strings"
 )
 
+const (
+	modeEdit int = iota
+	modeAppend
+	modeInsert
+)
+
 type TaskView struct {
 	tasklist       *TaskList
 	view           []int
@@ -96,16 +102,14 @@ func (tv *TaskView) CursorDown() {
 	if tv.cursor < len(tv.view)-1 {
 		tv.cursor++
 		tv.scrollToCursor()
-	} else {
-		tv.AppendTask()
 	}
 }
 
 func (tv *TaskView) CursorUp() {
 	if tv.cursor > 0 {
 		tv.cursor--
+		tv.scrollToCursor()
 	}
-	tv.scrollToCursor()
 }
 
 func (tv *TaskView) PageDown() {
@@ -159,16 +163,23 @@ func (tv *TaskView) DeleteTask() {
 	}
 }
 
-func (tv *TaskView) EditTask() (int, termbox.Event) {
+func (tv *TaskView) doEdit(mode int) (int, termbox.Event) {
 	index, task := tv.SelectedTask()
 
 	// TODO Refactor to Update by TaskList
 	oldDescription := task.Description
-	input := editbox.Input(tv.x+6, tv.CursorToY(), tv.w-3, 0, 0)
+	var x int
+	if task.Status == StatusComment {
+		x = tv.x + 2
+	} else {
+		x = tv.x + 6
+	}
+	input := editbox.Input(x, tv.CursorToY(), tv.w-3, 0, 0)
 	input.SetText(task.Description)
 	ev := input.WaitExit()
 	newDescription := input.Text()
-	if ev.Key == termbox.KeyEsc && oldDescription == "" && newDescription == "" {
+	if mode == modeAppend && ev.Key == termbox.KeyEsc &&
+		oldDescription == "" && newDescription == "" {
 		tv.DeleteTask()
 		index = -1
 	}
@@ -185,13 +196,28 @@ func (tv *TaskView) EditTask() (int, termbox.Event) {
 	return index, ev
 }
 
+func (tv *TaskView) EditTask() (int, termbox.Event) {
+	for {
+		index, _ := tv.SelectedTask()
+		_, ev := tv.doEdit(modeEdit)
+		if ev.Key == termbox.KeyEsc {
+			return index, ev
+		}
+		if tv.cursor == len(tv.view)-1 {
+			return index, ev
+		}
+		tv.CursorDown()
+		tv.render()
+	}
+}
+
 func (tv *TaskView) InsertTask() (int, termbox.Event) {
 	for {
 		index, _ := tv.SelectedTask()
 		tv.tasklist.Insert(index, tv.NewTask())
 		tv.calculate()
 		tv.render()
-		_, ev := tv.EditTask()
+		_, ev := tv.doEdit(modeInsert)
 		if ev.Key == termbox.KeyEsc {
 			return index, ev
 		}
@@ -206,7 +232,7 @@ func (tv *TaskView) AppendTask() (int, termbox.Event) {
 		tv.cursor = len(tv.view) - 1
 		tv.scrollToCursor()
 		tv.render()
-		index, ev := tv.EditTask()
+		index, ev := tv.doEdit(modeAppend)
 		if ev.Key == termbox.KeyEsc {
 			return index, ev
 		}

@@ -174,7 +174,11 @@ func (tv *TaskView) mainLoop() {
 			switch {
 			case ev.Key == termbox.KeyArrowDown ||
 				ev.Ch == 'j':
-				tv.CursorDown()
+				if tv.cursor == len(tv.view)-1 {
+					tv.AppendTask()
+				} else {
+					tv.CursorDown()
+				}
 			case ev.Key == termbox.KeyArrowUp ||
 				ev.Ch == 'k':
 				tv.CursorUp()
