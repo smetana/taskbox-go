@@ -169,7 +169,7 @@ func (tb *TaskBox) SelectedLine() (int, string) {
 
 func (tb *TaskBox) HandleTaskEvent(ev termbox.Event) {
 	switch {
-	case ev.Key == termbox.KeyEnter || ev.Ch == 'e' || ev.Ch == 'a':
+	case ev.Key == termbox.KeyEnter || ev.Ch == 'a':
 		tb.EnterEditMode()
 	case ev.Key == termbox.KeyInsert || ev.Ch == 'i':
 		tb.InsertLineAndEdit()
@@ -185,17 +185,15 @@ func (tb *TaskBox) HandleTaskEvent(ev termbox.Event) {
 		tb.PageUp()
 	case ev.Key == termbox.KeySpace:
 		tb.ToggleTask()
-	case ev.Key == termbox.KeyArrowLeft:
+	case ev.Key == termbox.KeyArrowLeft || ev.Ch == '<':
 		tb.MoveLineUp()
-	case ev.Key == termbox.KeyArrowRight:
+	case ev.Key == termbox.KeyArrowRight || ev.Ch == '>':
 		tb.MoveLineDown()
 	case ev.Key == termbox.KeyTab || ev.Ch == '~' || ev.Ch == '`':
 		tb.NextFilter()
 	case ev.Key == termbox.KeyCtrlS || ev.Ch == 's':
 		tb.Save(tb.path)
-	case ev.Key == termbox.KeyF1 ||
-		ev.Ch == '?' ||
-		ev.Ch == 'h':
+	case ev.Key == termbox.KeyF1 || ev.Ch == '?' || ev.Ch == 'h':
 		help()
 	case ev.Key == termbox.KeyCtrlQ ||
 		ev.Key == termbox.KeyCtrlX ||
