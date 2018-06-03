@@ -88,6 +88,9 @@ func (tb TaskBox) TaskFilterPrefix() string {
 }
 
 func (tb *TaskBox) String() string {
+	if len(tb.view) == 0 {
+		return "> No tasks. Press Enter to create one\n"
+	}
 	var to int
 	if tb.scroll+tb.h > len(tb.view) {
 		to = len(tb.view)

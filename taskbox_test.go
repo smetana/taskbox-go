@@ -278,6 +278,7 @@ func TestToggleAndFilterOut(t *testing.T) {
 
 	tb.ToggleTask()
 	assert.Equal(t, tb.String(), heredoc.Doc(`
+		> No tasks. Press Enter to create one
 	`))
 
 }

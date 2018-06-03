@@ -7,6 +7,11 @@ import (
 
 func (tb *TaskBox) EnterEditMode() {
 	tb.mode = modeEdit
+	index, _ := tb.SelectedLine()
+	if index < 0 {
+		tb.InsertLine(0, tb.TaskFilterPrefix())
+		tb.calculate()
+	}
 	tb.AttachEditor()
 	tb.editor.Render()
 	tb.lastX, _ = tb.editor.GetCursor()
