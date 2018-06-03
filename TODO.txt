@@ -1,0 +1,11 @@
+Todos:
+
+[X] README/help
+[ ] due dates
+[ ] recurring tasks
+[ ] longer descriptions / details
+
+Fancy Work:
+
+[ ] tags
+[ ] color schemes
