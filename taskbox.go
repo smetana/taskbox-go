@@ -34,6 +34,7 @@ type TaskBox struct {
 	cursor   int
 	scroll   int
 	editor   *editbox.Editbox
+	lastX	 int
 }
 
 func NewTaskBox() *TaskBox {
@@ -76,6 +77,14 @@ func (tb *TaskBox) NextFilter() {
 			return
 		}
 	}
+}
+
+func (tb TaskBox) TaskFilterPrefix() string {
+	s := []rune(TaskPrefix)
+	if tb.filter == StatusClosed {
+		s[1] = StatusClosed
+	}
+	return string(s)
 }
 
 func (tb *TaskBox) String() string {
@@ -157,8 +166,10 @@ func (tb *TaskBox) SelectedLine() (int, string) {
 
 func (tb *TaskBox) HandleTaskEvent(ev termbox.Event) {
 	switch {
-	case ev.Key == termbox.KeyEnter:
+	case ev.Key == termbox.KeyEnter || ev.Ch == 'e' || ev.Ch == 'a':
 		tb.EnterEditMode()
+	case ev.Key == termbox.KeyInsert || ev.Ch == 'i':
+		tb.InsertLineAndEdit()
 	case ev.Key == termbox.KeyArrowDown || ev.Ch == 'j':
 		tb.CursorDown()
 	case ev.Key == termbox.KeyArrowUp || ev.Ch == 'k':

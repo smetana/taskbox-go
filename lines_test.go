@@ -98,18 +98,44 @@ func TestSwapLines(t *testing.T) {
 }
 
 func TestSplitLines(t *testing.T) {
-	tb := TaskBox{Lines: []string{"[ ] FooBar", "[ ] FooBaz"}}
+	tb := TaskBox{Lines: []string{"[ ] FooBar", "[@] FooBaz"}}
 	tb.SplitLine(0, 7)
 	assert.Equal(t, tb.InnerString(), heredoc.Doc(`
 		[ ] Foo
-		Bar
-		[ ] FooBaz
+		[ ] Bar
+		[@] FooBaz
 	`))
 	tb.SplitLine(2, 7)
 	assert.Equal(t, tb.InnerString(), heredoc.Doc(`
 		[ ] Foo
-		Bar
-		[ ] Foo
+		[ ] Bar
+		[@] Foo
 		Baz
+	`))
+	tb.SplitLine(3, 3)
+	assert.Equal(t, tb.InnerString(), heredoc.Doc(`
+		[ ] Foo
+		[ ] Bar
+		[@] Foo
+		Baz
+
+	`))
+}
+
+func TestSplitFiltered(t *testing.T) {
+	tb := TaskBox{Lines: []string{"[X] FooBar", "[ ] FooBaz"}}
+	tb.Filter(StatusClosed)
+	tb.SplitLine(0, 7)
+	assert.Equal(t, tb.InnerString(), heredoc.Doc(`
+		[X] Foo
+		[X] Bar
+		[ ] FooBaz
+	`))
+	tb.SplitLine(2, 7)
+	assert.Equal(t, tb.InnerString(), heredoc.Doc(`
+		[X] Foo
+		[X] Bar
+		[ ] Foo
+		[X] Baz
 	`))
 }

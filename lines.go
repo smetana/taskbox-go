@@ -50,6 +50,9 @@ func (tb *TaskBox) SwapLines(i, j int) {
 func (tb *TaskBox) SplitLine(i, pos int) int {
 	right := tb.Lines[i][pos:]
 	tb.Lines[i] = tb.Lines[i][0:pos]
+	if IsTask(tb.Lines[i]) {
+		right = tb.TaskFilterPrefix() + right
+	}
 	i++
 	tb.InsertLine(i, right)
 	return i

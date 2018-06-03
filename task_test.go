@@ -41,4 +41,7 @@ func TestParseTask(t *testing.T) {
 
 	isTask, task = ParseTask("  baz  ")
 	assert.False(t, isTask)
+
+	isTask, task = ParseTask("[@] ")
+	assert.False(t, isTask)
 }
