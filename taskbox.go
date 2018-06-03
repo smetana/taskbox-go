@@ -191,6 +191,8 @@ func (tb *TaskBox) HandleTaskEvent(ev termbox.Event) {
 		tb.MoveLineDown()
 	case ev.Key == termbox.KeyTab || ev.Ch == '~' || ev.Ch == '`':
 		tb.NextFilter()
+	case ev.Key == termbox.KeyCtrlS || ev.Ch == 's':
+		tb.Save(tb.path)
 	case ev.Key == termbox.KeyF1 ||
 		ev.Ch == '?' ||
 		ev.Ch == 'h':
