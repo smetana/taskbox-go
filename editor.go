@@ -3,14 +3,13 @@ package main
 import (
 	"github.com/nsf/termbox-go"
 	"github.com/smetana/editbox-go"
-	"fmt"
 )
 
 func (tb *TaskBox) EnterEditMode() {
 	tb.mode = modeEdit
 	tb.AttachEditor()
 	tb.editor.Render()
-	tb.lastX, _  = tb.editor.GetCursor()
+	tb.lastX, _ = tb.editor.GetCursor()
 }
 
 func (tb *TaskBox) ExitEditMode() {
@@ -168,7 +167,6 @@ func (tb *TaskBox) HandleEditEvent(ev termbox.Event) {
 	}
 	if tb.editor != nil {
 		tb.editor.Render()
-		editbox.Label(0, 0, 10, 0, 0, fmt.Sprintf("%d     ", tb.lastX))
 		termbox.Flush()
 	}
 }

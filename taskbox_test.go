@@ -39,7 +39,9 @@ var LinesFixture = []string{
 }
 
 func TaskBoxFixture(size int) *TaskBox {
-	tb := &TaskBox{Lines: LinesFixture[0:size]}
+	lines := make([]string, size)
+	copy(lines, LinesFixture[0:size])
+	tb := &TaskBox{Lines: lines}
 	tb.calculate()
 	tb.h = size
 	return tb
@@ -145,101 +147,137 @@ func TestScrollingAndPaging(t *testing.T) {
 	assert.Equal(t, line, "xyzzy")
 }
 
-/*
-func TestTVMoveTaskDown(t *testing.T) {
-	tv := tvFixture(3)
-	tv.MoveTaskDown()
-	assert.Equal(t, tv.String(), heredoc.Doc(`
-	  [ ] bar
-	> [ ] foo
-	  [ ] baz
+func TestMoveLineDown(t *testing.T) {
+	tb := TaskBoxFixture(3)
+	tb.MoveLineDown()
+	assert.Equal(t, tb.String(), heredoc.Doc(`
+	  bar
+	> foo
+	  baz
 	`))
-	tv.MoveTaskDown()
-	assert.Equal(t, tv.String(), heredoc.Doc(`
-	  [ ] bar
-	  [ ] baz
-	> [ ] foo
+	tb.MoveLineDown()
+	assert.Equal(t, tb.String(), heredoc.Doc(`
+	  bar
+	  baz
+	> foo
 	`))
-	tv.MoveTaskDown()
-	assert.Equal(t, tv.String(), heredoc.Doc(`
-	  [ ] bar
-	  [ ] baz
-	> [ ] foo
-	`))
-}
-
-func TestTVInsertAndFilter(t *testing.T) {
-	tv := tvFixture(3)
-	tv.h = 100
-	tl := tv.tasklist
-	tl.Insert(1, Task{Description: "qux", Status: StatusClosed})
-	tl.Insert(3, Task{Description: "quux", Status: StatusClosed})
-	tv.calculate()
-	assert.Equal(t, tv.String(), heredoc.Doc(`
-	> [ ] foo
-	  [X] qux
-	  [ ] bar
-	  [X] quux
-	  [ ] baz
-	`))
-	tv.Filter(StatusOpen)
-	assert.Equal(t, tv.String(), heredoc.Doc(`
-	> [ ] foo
-	  [ ] bar
-	  [ ] baz
-	`))
-	tv.Filter(StatusClosed)
-	assert.Equal(t, tv.String(), heredoc.Doc(`
-	> [X] qux
-	  [X] quux
-	`))
-	tv.Filter(StatusAll)
-	assert.Equal(t, tv.String(), heredoc.Doc(`
-	> [ ] foo
-	  [X] qux
-	  [ ] bar
-	  [X] quux
-	  [ ] baz
+	tb.MoveLineDown()
+	assert.Equal(t, tb.String(), heredoc.Doc(`
+	  bar
+	  baz
+	> foo
 	`))
 }
 
-func TestTVMoveTaskUp(t *testing.T) {
-	tv := tvFixture(3)
-	tv.MoveTaskUp()
-	tv.calculate()
-	assert.Equal(t, tv.String(), heredoc.Doc(`
-	> [ ] foo
-	  [ ] bar
-	  [ ] baz
+func TestMoveLineUp(t *testing.T) {
+	tb := TaskBoxFixture(3)
+	assert.Equal(t, tb.cursor, 0)
+	assert.Equal(t, tb.String(), heredoc.Doc(`
+	> foo
+	  bar
+	  baz
 	`))
-	tv.CursorDown()
-	tv.CursorDown()
-	assert.Equal(t, tv.String(), heredoc.Doc(`
-	  [ ] foo
-	  [ ] bar
-	> [ ] baz
+	tb.MoveLineUp()
+	assert.Equal(t, tb.String(), heredoc.Doc(`
+	> foo
+	  bar
+	  baz
 	`))
-	tv.MoveTaskUp()
-	tv.calculate()
-	assert.Equal(t, tv.String(), heredoc.Doc(`
-	  [ ] foo
-	> [ ] baz
-	  [ ] bar
+	tb.CursorDown()
+	tb.CursorDown()
+	assert.Equal(t, tb.String(), heredoc.Doc(`
+	  foo
+	  bar
+	> baz
 	`))
-	tv.MoveTaskUp()
-	tv.calculate()
-	assert.Equal(t, tv.String(), heredoc.Doc(`
-	> [ ] baz
-	  [ ] foo
-	  [ ] bar
+	tb.MoveLineUp()
+	assert.Equal(t, tb.String(), heredoc.Doc(`
+	  foo
+	> baz
+	  bar
 	`))
-	tv.MoveTaskUp()
-	tv.calculate()
-	assert.Equal(t, tv.String(), heredoc.Doc(`
-	> [ ] baz
-	  [ ] foo
-	  [ ] bar
+	tb.MoveLineUp()
+	assert.Equal(t, tb.String(), heredoc.Doc(`
+	> baz
+	  foo
+	  bar
+	`))
+	tb.MoveLineUp()
+	assert.Equal(t, tb.String(), heredoc.Doc(`
+	> baz
+	  foo
+	  bar
 	`))
 }
 
-*/
+func TestToggle(t *testing.T) {
+	tb := &TaskBox{Lines: []string{"Foo", "[ ] Bar", "[X] Baz"}}
+	tb.Filter(StatusAll)
+	tb.calculate()
+	tb.h = 3
+	assert.Equal(t, tb.String(), heredoc.Doc(`
+		> Foo
+		  [ ] Bar
+		  [X] Baz
+	`))
+
+	tb.CursorDown()
+	tb.ToggleTask()
+	assert.Equal(t, tb.String(), heredoc.Doc(`
+		  Foo
+		> [X] Bar
+		  [X] Baz
+	`))
+
+	tb.CursorDown()
+	tb.ToggleTask()
+	assert.Equal(t, tb.String(), heredoc.Doc(`
+		  Foo
+		  [X] Bar
+		> [ ] Baz
+	`))
+}
+
+func TestToggleAndFilterOut(t *testing.T) {
+	tb := &TaskBox{Lines: []string{"[ ] Foo", "[ ] Bar", "[ ] Baz"}}
+	tb.Filter(StatusOpen)
+	tb.calculate()
+	tb.h = 3
+	assert.Equal(t, tb.String(), heredoc.Doc(`
+		> [ ] Foo
+		  [ ] Bar
+		  [ ] Baz
+	`))
+
+	tb.CursorDown()
+	tb.ToggleTask()
+	assert.Equal(t, tb.String(), heredoc.Doc(`
+		  [ ] Foo
+		> [ ] Baz
+	`))
+
+	tb.CursorDown()
+	tb.ToggleTask()
+	assert.Equal(t, tb.String(), heredoc.Doc(`
+		> [ ] Foo
+	`))
+
+	tb.Filter(StatusClosed)
+	tb.calculate()
+	tb.h = 3
+	assert.Equal(t, tb.String(), heredoc.Doc(`
+		> [X] Bar
+		  [X] Baz
+	`))
+
+	tb.CursorDown()
+	tb.ToggleTask()
+	assert.Equal(t, tb.String(), heredoc.Doc(`
+		> [X] Bar
+	`))
+
+	tb.ToggleTask()
+	assert.Equal(t, tb.String(), heredoc.Doc(`
+	`))
+
+}

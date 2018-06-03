@@ -34,7 +34,7 @@ type TaskBox struct {
 	cursor   int
 	scroll   int
 	editor   *editbox.Editbox
-	lastX	 int
+	lastX    int
 }
 
 func NewTaskBox() *TaskBox {
@@ -170,6 +170,8 @@ func (tb *TaskBox) HandleTaskEvent(ev termbox.Event) {
 		tb.EnterEditMode()
 	case ev.Key == termbox.KeyInsert || ev.Ch == 'i':
 		tb.InsertLineAndEdit()
+	case ev.Key == termbox.KeyDelete || ev.Ch == 'd':
+		tb.TaskDeleteKey()
 	case ev.Key == termbox.KeyArrowDown || ev.Ch == 'j':
 		tb.CursorDown()
 	case ev.Key == termbox.KeyArrowUp || ev.Ch == 'k':
@@ -178,6 +180,12 @@ func (tb *TaskBox) HandleTaskEvent(ev termbox.Event) {
 		tb.PageDown()
 	case ev.Key == termbox.KeyPgup:
 		tb.PageUp()
+	case ev.Key == termbox.KeySpace:
+		tb.ToggleTask()
+	case ev.Key == termbox.KeyArrowLeft:
+		tb.MoveLineUp()
+	case ev.Key == termbox.KeyArrowRight:
+		tb.MoveLineDown()
 	case ev.Key == termbox.KeyTab || ev.Ch == '~' || ev.Ch == '`':
 		tb.NextFilter()
 	case ev.Key == termbox.KeyF1 ||
@@ -193,50 +201,52 @@ func (tb *TaskBox) HandleTaskEvent(ev termbox.Event) {
 	tb.render()
 }
 
-/*
-func (tv *TaskView) DeleteTask() {
-	index, task := tv.SelectedTask()
-	if task != nil && (task.Description == "" ||
-					   task.Status == StatusComment ||
-					   confirm("Delete \""+task.Description+"\"?")) {
-		tv.tasklist.Delete(index)
-		tv.calculate()
-	}
-}
-
-func (tv *TaskView) ToggleTask() {
-	_, task := tv.SelectedTask()
-	if task == nil || task.Status == StatusComment {
-		return
-	}
-	if task.Status == StatusOpen {
-		task.Status = StatusClosed
+func (tb *TaskBox) TaskDeleteKey() {
+	i, s := tb.SelectedLine()
+	isTask, t := ParseTask(s)
+	if isTask {
+		confirm, _ := confirm("Delete \"" + t.Description + "\"?")
+		if confirm {
+			tb.DeleteLine(i)
+		}
 	} else {
-		task.Status = StatusOpen
+		tb.DeleteLine(i)
 	}
-	tv.tasklist.modified = true
-	tv.calculate()
+	tb.calculate()
 }
 
-func (tv *TaskView) MoveTaskDown() {
-	if tv.cursor >= len(tv.view)-1 {
-		return
+func (tb *TaskBox) ToggleTask() {
+	i, s := tb.SelectedLine()
+	isTask, task := ParseTask(s)
+	if isTask {
+		if task.Status == StatusOpen {
+			task.Status = StatusClosed
+		} else {
+			task.Status = StatusOpen
+		}
+		tb.UpdateLine(i, task.String())
+		tb.calculate()
 	}
-	index1 := tv.view[tv.cursor]
-	index2 := tv.view[tv.cursor+1]
-	tv.tasklist.Swap(index1, index2)
-	tv.calculate()
-	tv.CursorDown()
 }
 
-func (tv *TaskView) MoveTaskUp() {
-	if tv.cursor <= 0 {
+func (tb *TaskBox) MoveLineDown() {
+	if tb.cursor >= len(tb.view)-1 {
 		return
 	}
-	index1 := tv.view[tv.cursor]
-	index2 := tv.view[tv.cursor-1]
-	tv.tasklist.Swap(index1, index2)
-	tv.calculate()
-	tv.CursorUp()
+	index1 := tb.view[tb.cursor]
+	index2 := tb.view[tb.cursor+1]
+	tb.SwapLines(index1, index2)
+	tb.calculate()
+	tb.CursorDown()
 }
-*/
+
+func (tb *TaskBox) MoveLineUp() {
+	if tb.cursor <= 0 {
+		return
+	}
+	index1 := tb.view[tb.cursor]
+	index2 := tb.view[tb.cursor-1]
+	tb.SwapLines(index1, index2)
+	tb.calculate()
+	tb.CursorUp()
+}
