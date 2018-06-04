@@ -169,7 +169,7 @@ func (tb *TaskBox) SelectedLine() (int, string) {
 
 func (tb *TaskBox) HandleTaskEvent(ev termbox.Event) {
 	switch {
-	case ev.Key == termbox.KeyEnter || ev.Ch == 'a':
+	case ev.Key == termbox.KeyEnter || ev.Key == termbox.KeyEnd || ev.Ch == 'a':
 		tb.EnterEditMode()
 	case ev.Key == termbox.KeyInsert || ev.Ch == 'i':
 		tb.InsertLineAndEdit()
