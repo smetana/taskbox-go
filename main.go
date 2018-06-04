@@ -17,7 +17,7 @@ func check(e error) {
 
 func help() {
 	termbox.Clear(0, 0)
-	var shortcuts = []struct {key, desc string} {
+	var shortcuts = []struct{ key, desc string }{
 		{"k,Up", "Cursor Up"},
 		{"j,Down", "Cursor Down"},
 		{"a,Enter", "Enter Edit Mode (in Task Mode)"},
