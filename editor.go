@@ -19,6 +19,12 @@ func (tb *TaskBox) EnterEditMode() {
 
 func (tb *TaskBox) ExitEditMode() {
 	tb.DetachEditor()
+	index, s := tb.SelectedLine()
+	isTask, t := ParseTask(s)
+	if isTask && t.Description == "" {
+		tb.DeleteLine(index)
+		tb.calculate()
+	}
 	termbox.HideCursor()
 	tb.mode = modeTask
 	tb.render()
