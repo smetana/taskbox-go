@@ -207,7 +207,7 @@ func (tb *TaskBox) HandleTaskEvent(ev termbox.Event) {
 func (tb *TaskBox) TaskDeleteKey() {
 	i, s := tb.SelectedLine()
 	isTask, t := ParseTask(s)
-	if isTask {
+	if isTask && t.Description != "" {
 		confirm, _ := confirm("Delete \"" + t.Description + "\"?")
 		if confirm {
 			tb.DeleteLine(i)
