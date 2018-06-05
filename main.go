@@ -112,7 +112,7 @@ func main() {
 		os.Exit(1)
 	}
 	filename := flagset.Args()[0]
-	tb := &TaskBox{}
+	tb := &TaskBox{filter: StatusOpen}
 	tb.Load(filename)
 
 	err := termbox.Init()
@@ -120,7 +120,6 @@ func main() {
 	termbox.SetInputMode(termbox.InputEsc)
 	termbox.HideCursor()
 
-	tb.Filter(StatusOpen)
 	tb.render()
 	tb.mainLoop()
 

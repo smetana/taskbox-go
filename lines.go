@@ -76,6 +76,7 @@ func (tb *TaskBox) Load(path string) {
 		tb.AppendLine(scanner.Text())
 	}
 	check(scanner.Err())
+	tb.calculate()
 	tb.modified = false
 }
 
