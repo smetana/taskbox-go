@@ -37,12 +37,6 @@ type TaskBox struct {
 	lastX    int
 }
 
-func NewTaskBox() *TaskBox {
-	tb := new(TaskBox)
-	tb.Filter(StatusAll)
-	return tb
-}
-
 func (tb *TaskBox) calculate() {
 	tb.view = make([]int, 0)
 	for i, line := range tb.Lines {

@@ -50,11 +50,12 @@ func TaskBoxFixture(size int) *TaskBox {
 // ----------------------------------------------------------------------------
 
 func TestNewTaskBox(t *testing.T) {
-	tb := NewTaskBox()
+	tb := &TaskBox{}
 	assert.Equal(t, tb.cursor, 0)
 	i, line := tb.SelectedLine()
 	assert.Equal(t, i, -1)
 	assert.True(t, line == "")
+	assert.Equal(t, StatusAll, tb.filter)
 }
 
 func TestTaskBoxString(t *testing.T) {
