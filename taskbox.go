@@ -66,7 +66,7 @@ func (tb *TaskBox) Filter(s Status) {
 }
 
 func (tb *TaskBox) NextFilter() {
-	filters := [3]rune{' ', 'X', '*'}
+	filters := [3]Status{StatusOpen, StatusClosed, StatusAll}
 	for i, f := range filters {
 		if tb.filter == Status(f) {
 			i++

@@ -9,7 +9,7 @@ const TaskPrefix string = "[ ] "
 type Status rune
 
 const (
-	StatusAll    Status = '*'
+	StatusAll    Status = 0
 	StatusOpen          = ' '
 	StatusClosed        = 'X'
 )
