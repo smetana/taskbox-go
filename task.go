@@ -14,12 +14,23 @@ const (
 	StatusClosed        = 'X'
 )
 
+var statusToString = map[Status]string{
+	StatusAll:    "All",
+	StatusOpen:   "Open",
+	StatusClosed: "Closed",
+}
+
 func (s Status) String() string {
-	return map[Status]string{
-		StatusAll:    "All",
-		StatusOpen:   "Open",
-		StatusClosed: "Closed",
-	}[s]
+	return statusToString[s]
+}
+
+func StatusFromString(s string) Status {
+	for k, v := range statusToString {
+		if v == s {
+			return k
+		}
+	}
+	return StatusAll
 }
 
 type Task struct {

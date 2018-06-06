@@ -9,12 +9,6 @@ import (
 	"strings"
 )
 
-func check(e error) {
-	if e != nil {
-		panic(e)
-	}
-}
-
 func help() {
 	termbox.Clear(0, 0)
 	var shortcuts = []struct{ key, desc string }{
@@ -41,6 +35,12 @@ func help() {
 	}
 	termbox.Flush()
 	termbox.PollEvent()
+}
+
+func check(e error) {
+	if e != nil {
+		panic(e)
+	}
 }
 
 func confirm(msg string) (bool, termbox.Event) {
@@ -103,19 +103,23 @@ func (tb *TaskBox) mainLoop() {
 
 func main() {
 
-	flagset := flag.NewFlagSet("tasks", flag.ExitOnError)
-	flagset.Usage = func() {
-		fmt.Println("Usage: tasks filename")
-		flagset.PrintDefaults()
+	flag.Usage = func() {
+		fmt.Println("Usage: taskbox [options] filename")
+		flag.PrintDefaults()
 	}
-	flagset.Parse(os.Args[1:])
-	if len(flagset.Args()) == 0 {
-		flagset.Usage()
+	flagStatus := flag.String("status", "All",
+		"Filter by task status on start: All,Open,Closed")
+	flag.Parse()
+
+	if len(flag.Args()) == 0 {
+		flag.Usage()
 		os.Exit(1)
 	}
-	filename := flagset.Args()[0]
-	tb := &TaskBox{filter: StatusOpen}
+
+	tb := &TaskBox{filter: StatusFromString(*flagStatus)}
 	tb.undo = NewUndo(tb)
+
+	filename := flag.Args()[0]
 	tb.Load(filename)
 
 	err := termbox.Init()
