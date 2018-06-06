@@ -7,7 +7,10 @@ import (
 	"github.com/smetana/editbox-go"
 	"os"
 	"strings"
+	"time"
 )
+
+var autosaveInterval time.Duration
 
 func help() {
 	termbox.Clear(0, 0)
@@ -59,20 +62,30 @@ func (tb *TaskBox) render() {
 	tb.y = 1
 	editbox.Text(tb.x, tb.y, 0, 0, 0, 0, tb.String())
 
-	// status line
-	var s strings.Builder
-	fmt.Fprintf(&s, "Mode:%s", tb.mode.String())
-	fmt.Fprintf(&s, "; Filter:%s", tb.filter.String())
-	if tb.modified {
-		fmt.Fprintf(&s, "; Modified")
-	}
-	editbox.Label(1, h-1, 0, 0, 0, s.String())
-
 	if tb.editor != nil {
 		tb.editor.Render()
 	}
 
+	tb.renderStatusLine()
 	termbox.Flush()
+}
+
+func (tb *TaskBox) renderStatusLine() {
+	w, h := termbox.Size()
+	var s strings.Builder
+	fmt.Fprintf(&s, " Mode:%s", tb.mode.String())
+	fmt.Fprintf(&s, "; Filter:%s", tb.filter.String())
+	if autosaveInterval > 0 {
+		fmt.Fprintf(&s, "; Autosave:%.0fmin", autosaveInterval.Minutes())
+	}
+	if tb.modified {
+		fmt.Fprintf(&s, "; Modified")
+	} else {
+		if tb.undo.Len > 0 {
+			fmt.Fprintf(&s, "; Saved")
+		}
+	}
+	editbox.Label(0, h-1, w, 0, 0, s.String())
 }
 
 func (tb *TaskBox) mainLoop() {
@@ -101,20 +114,35 @@ func (tb *TaskBox) mainLoop() {
 	}
 }
 
-func main() {
 
-	flag.Usage = func() {
-		fmt.Println("Usage: taskbox [options] filename")
-		flag.PrintDefaults()
+func autosave(tb *TaskBox, d time.Duration) {
+	for {
+		<- time.After(d)
+		if tb.modified {
+			tb.Save(tb.path)
+			tb.renderStatusLine()
+			termbox.Flush()
+		}
 	}
-	flagStatus := flag.String("status", "All",
-		"Filter by task status on start: All,Open,Closed")
+}
+
+func main() {
+	flag.Usage = func() {
+		fmt.Println("Usage:\n  taskbox [options] filename\n\nOptions:")
+		flag.PrintDefaults()
+		fmt.Println()
+	}
+	flagStatus := flag.String("status", "",
+		"Filter by task status on start (All,Open,Closed)")
+	flagAutosave := flag.Int("autosave", 0,
+		"Autosave interval in minutes (0 = Disable)")
 	flag.Parse()
 
 	if len(flag.Args()) == 0 {
 		flag.Usage()
 		os.Exit(1)
 	}
+	autosaveInterval = time.Duration(*flagAutosave) * time.Minute
 
 	tb := &TaskBox{filter: StatusFromString(*flagStatus)}
 	tb.undo = NewUndo(tb)
@@ -128,6 +156,11 @@ func main() {
 	termbox.HideCursor()
 
 	tb.render()
+
+	if *flagAutosave > 0 {
+		go autosave(tb, autosaveInterval)
+	}
+
 	tb.mainLoop()
 
 	termbox.Close()
