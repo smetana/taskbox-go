@@ -56,8 +56,8 @@ func confirm(msg string) (bool, termbox.Event) {
 func (tb *TaskBox) render() {
 	termbox.Clear(0, 0)
 	w, h := termbox.Size()
-	tb.w = int(w/2) - 2 // minus margins
-	tb.h = h - 4        // minus status and margins
+	tb.w = w - 2 // minus margins
+	tb.h = h - 4 // minus status and margins
 	tb.x = 1
 	tb.y = 1
 	editbox.Text(tb.x, tb.y, 0, 0, 0, 0, tb.String())
@@ -76,7 +76,7 @@ func (tb *TaskBox) renderStatusLine() {
 	fmt.Fprintf(&s, " Mode:%s", tb.mode.String())
 	fmt.Fprintf(&s, "; Filter:%s", tb.filter.String())
 	if autosaveInterval > 0 {
-		fmt.Fprintf(&s, "; Autosave:%.0fmin", autosaveInterval.Minutes())
+		fmt.Fprintf(&s, "; Autosave:%.0fm", autosaveInterval.Minutes())
 	}
 	if tb.modified {
 		fmt.Fprintf(&s, "; Modified")
@@ -114,10 +114,9 @@ func (tb *TaskBox) mainLoop() {
 	}
 }
 
-
 func autosave(tb *TaskBox, d time.Duration) {
 	for {
-		<- time.After(d)
+		<-time.After(d)
 		if tb.modified {
 			tb.Save(tb.path)
 			tb.renderStatusLine()
