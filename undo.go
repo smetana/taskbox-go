@@ -59,6 +59,7 @@ type Undo struct {
 	tb      *TaskBox
 	Changes [][]Change
 	Chain   *[]Change
+	Len     int
 }
 
 func NewUndo(tb *TaskBox) *Undo {
@@ -73,6 +74,7 @@ func (u *Undo) StartChain() {
 func (u *Undo) PutChain() {
 	u.Changes = append(u.Changes, *u.Chain)
 	u.Chain = nil
+	u.Len = len(u.Changes)
 }
 
 func (u *Undo) Put(c Change) {
@@ -83,6 +85,7 @@ func (u *Undo) Put(c Change) {
 	} else {
 		u.Changes = append(u.Changes, []Change{c})
 	}
+	u.Len = len(u.Changes)
 }
 
 func (u *Undo) Undo() {
@@ -91,7 +94,7 @@ func (u *Undo) Undo() {
 	}
 	u.tb.undo = nil // Disable Undo
 	chain := u.Changes[len(u.Changes)-1]
-	// play track in reverse
+	// play chain backward
 	for i := len(chain) - 1; i >= 0; i-- {
 		change := chain[i]
 		switch change.Action {
@@ -109,6 +112,32 @@ func (u *Undo) Undo() {
 
 	}
 	u.Changes = u.Changes[0 : len(u.Changes)-1]
+	u.tb.undo = u
+	u.tb.calculate()
+}
+
+func (u *Undo) Redo() {
+	if u.Len == len(u.Changes) {
+		return
+	}
+	u.Changes = u.Changes[0 : len(u.Changes)+1]
+	u.tb.undo = nil // Disable Undo
+	chain := u.Changes[len(u.Changes)-1]
+	// play chain forward
+	for _, change := range chain {
+		switch change.Action {
+		case ActionInsert:
+			u.tb.InsertLine(change.LineIndex, change.NewLine)
+		case ActionDelete:
+			u.tb.DeleteLine(change.LineIndex)
+		case ActionUpdate:
+			u.tb.UpdateLine(change.LineIndex, change.NewLine)
+		case ActionSwap:
+			u.tb.SwapLines(change.LineIndex1, change.LineIndex2)
+		}
+		u.tb.cursor = change.Cursor
+		u.tb.filter = change.Filter
+	}
 	u.tb.undo = u
 	u.tb.calculate()
 }

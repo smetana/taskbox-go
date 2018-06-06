@@ -182,6 +182,8 @@ func (tb *TaskBox) HandleTaskEvent(ev termbox.Event) {
 		tb.ToggleTask()
 	case ev.Ch == 'u':
 		tb.undo.Undo()
+	case ev.Ch == 'r':
+		tb.undo.Redo()
 	case ev.Key == termbox.KeyArrowLeft || ev.Ch == '<':
 		tb.MoveLineUp()
 	case ev.Key == termbox.KeyArrowRight || ev.Ch == '>':

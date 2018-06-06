@@ -20,7 +20,6 @@ func help() {
 	var shortcuts = []struct{ key, desc string }{
 		{"k,Up", "Cursor Up"},
 		{"j,Down", "Cursor Down"},
-		{"u", "Undo"},
 		{"a,Enter", "Enter Edit Mode (in Task Mode)"},
 		{"Esc", "Enter Task Mode (in Edit mode)"},
 		{"Tab", "Insert Task Prefix \"[ ]\" (in Edit Mode)"},
@@ -30,6 +29,8 @@ func help() {
 		{"<,Left", "Move Task/Line Up"},
 		{">,Right", "Move Task/Line Down"},
 		{"~,Tab", "Change Filter"},
+		{"u", "Undo"},
+		{"r", "Redo"},
 		{"s,^S", "Save"},
 		{"q,^Q", "Quit"},
 	}

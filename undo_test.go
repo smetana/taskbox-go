@@ -147,3 +147,87 @@ func TestClearUndoOnLoad(t *testing.T) {
 		[X] Baz
 	`))
 }
+
+func TestRedo(t *testing.T) {
+	tb := TaskBoxWithUndo()
+	tb.Lines = []string{"[ ] Foo", "[ ] Bar", "[X] Baz"}
+	tb.InsertLine(2, "[X] Qux")
+	tb.InsertLine(1, "## Xyz")
+	tb.DeleteLine(1)
+	tb.InsertLine(1, "FooBar")
+	tb.SplitLine(1, 3)
+	tb.SwapLines(1, 2)
+	tb.DeleteLine(2)
+	tb.undo.Undo()
+	tb.undo.Undo()
+	tb.undo.Undo()
+	tb.undo.Undo()
+	tb.undo.Undo()
+	tb.undo.Undo()
+	tb.undo.Undo()
+	tb.undo.Undo() // extra
+	tb.undo.Undo() // extra
+	assert.Equal(t, tb.InnerString(), heredoc.Doc(`
+		[ ] Foo
+		[ ] Bar
+		[X] Baz
+	`))
+	tb.undo.Redo()
+	assert.Equal(t, tb.InnerString(), heredoc.Doc(`
+		[ ] Foo
+		[ ] Bar
+		[X] Qux
+		[X] Baz
+	`))
+	tb.undo.Redo()
+	assert.Equal(t, tb.InnerString(), heredoc.Doc(`
+		[ ] Foo
+		## Xyz
+		[ ] Bar
+		[X] Qux
+		[X] Baz
+	`))
+	tb.undo.Redo()
+	assert.Equal(t, tb.InnerString(), heredoc.Doc(`
+		[ ] Foo
+		[ ] Bar
+		[X] Qux
+		[X] Baz
+	`))
+	// Clears Redo
+	tb.InsertLine(1, "FooBar")
+	assert.Equal(t, tb.InnerString(), heredoc.Doc(`
+		[ ] Foo
+		FooBar
+		[ ] Bar
+		[X] Qux
+		[X] Baz
+	`))
+	tb.undo.Redo()
+	assert.Equal(t, tb.InnerString(), heredoc.Doc(`
+		[ ] Foo
+		FooBar
+		[ ] Bar
+		[X] Qux
+		[X] Baz
+	`))
+	tb.undo.Undo()
+	tb.undo.Undo()
+	assert.Equal(t, tb.InnerString(), heredoc.Doc(`
+		[ ] Foo
+		## Xyz
+		[ ] Bar
+		[X] Qux
+		[X] Baz
+	`))
+	tb.undo.Redo()
+	tb.undo.Redo()
+	tb.undo.Redo()
+	assert.Equal(t, tb.InnerString(), heredoc.Doc(`
+		[ ] Foo
+		FooBar
+		[ ] Bar
+		[X] Qux
+		[X] Baz
+	`))
+}
