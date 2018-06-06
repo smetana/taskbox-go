@@ -35,6 +35,7 @@ type TaskBox struct {
 	scroll   int
 	editor   *editbox.Editbox
 	lastX    int
+	undo     *Undo
 }
 
 func (tb *TaskBox) calculate() {
@@ -179,6 +180,8 @@ func (tb *TaskBox) HandleTaskEvent(ev termbox.Event) {
 		tb.PageUp()
 	case ev.Key == termbox.KeySpace:
 		tb.ToggleTask()
+	case ev.Ch == 'u':
+		tb.undo.Undo()
 	case ev.Key == termbox.KeyArrowLeft || ev.Ch == '<':
 		tb.MoveLineUp()
 	case ev.Key == termbox.KeyArrowRight || ev.Ch == '>':

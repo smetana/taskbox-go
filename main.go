@@ -20,6 +20,7 @@ func help() {
 	var shortcuts = []struct{ key, desc string }{
 		{"k,Up", "Cursor Up"},
 		{"j,Down", "Cursor Down"},
+		{"u", "Undo"},
 		{"a,Enter", "Enter Edit Mode (in Task Mode)"},
 		{"Esc", "Enter Task Mode (in Edit mode)"},
 		{"Tab", "Insert Task Prefix \"[ ]\" (in Edit Mode)"},
@@ -113,6 +114,7 @@ func main() {
 	}
 	filename := flagset.Args()[0]
 	tb := &TaskBox{filter: StatusOpen}
+	tb.undo = NewUndo(tb)
 	tb.Load(filename)
 
 	err := termbox.Init()
