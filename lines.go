@@ -8,6 +8,13 @@ import (
 )
 
 func (tb *TaskBox) InnerString() string {
+	if tb.mode == modeEdit {
+		index, oldL := tb.SelectedLine()
+		newL := tb.editor.Text()
+		if oldL != newL {
+			tb.UpdateLine(index, newL)
+		}
+	}
 	return strings.Join(tb.Lines, "\n") + "\n"
 }
 
