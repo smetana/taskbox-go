@@ -25,10 +25,11 @@ func (tb *TaskBox) InsertLine(i int, line string) {
 
 func (tb *TaskBox) UpdateLine(i int, newL string) {
 	oldL := tb.Lines[i]
-	if oldL != newL {
-		tb.Lines[i] = newL
-		tb.modified = true
+	if oldL == newL {
+		return
 	}
+	tb.Lines[i] = newL
+	tb.modified = true
 }
 
 func (tb *TaskBox) DeleteLine(i int) string {
