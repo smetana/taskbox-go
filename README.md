@@ -1,8 +1,22 @@
 ## TaskBox
 
-TaskBox is a hybrid between simple editor and simple task manager for terminal.
-It stores data in plain human readable text files (see [TODO.txt](TODO.txt)),
-does not use any database backend, and does not require any libs.
+Yet another task manager for terminal. In fact this is a hybrid between
+simple editor and simple task manager.
+
+## Why?
+
+I surrender to find perfect (for me) task manager. I practice in Go.
+
+## Features
+
+  * TUI
+  * uses plain text files in human readable,
+    [github friendly](https://help.github.com/articles/about-task-lists/) format
+  * unlimited undo/redo
+  * autosave
+  * does not require any libs (except Go dependencies)
+
+## Screenshot
 
 ![Screenshot](screenshot.png)
 

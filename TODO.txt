@@ -1,9 +1,17 @@
 Todos:
 
 [X] README/help
+[X] undo/redo
+[X] autosave
 [ ] due dates
 [ ] recurring tasks
-[ ] longer descriptions / details
+[ ] complex filters
+
+Maybe:
+
+[ ] task details (hidden descriptions)
+[ ] task history
+[ ] time tracking
 
 Fancy Work:
 
