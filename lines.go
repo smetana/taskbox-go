@@ -86,6 +86,15 @@ func (tb *TaskBox) SplitLine(i, pos int) int {
 	return i
 }
 
+func (tb *TaskBox) MakeLastLine(i int) {
+	if tb.undo != nil {
+		tb.undo.StartChain()
+		defer tb.undo.PutChain()
+	}
+	line := tb.DeleteLine(i)
+	tb.AppendLine(line)
+}
+
 func (tb *TaskBox) Load(path string) {
 	tb.path = path
 	tb.Lines = make([]string, 0)

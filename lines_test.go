@@ -139,3 +139,27 @@ func TestSplitFiltered(t *testing.T) {
 		[X] Baz
 	`))
 }
+
+func TestMakeLastLine(t *testing.T) {
+	tb := TaskBox{Lines: []string{"[ ] Foo", "[ ] Bar", "[X] Baz", "[ ] Qux"}}
+	assert.Equal(t, tb.InnerString(), heredoc.Doc(`
+		[ ] Foo
+		[ ] Bar
+		[X] Baz
+		[ ] Qux
+	`))
+	tb.MakeLastLine(1)
+	assert.Equal(t, tb.InnerString(), heredoc.Doc(`
+		[ ] Foo
+		[X] Baz
+		[ ] Qux
+		[ ] Bar
+	`))
+	tb.MakeLastLine(3)
+	assert.Equal(t, tb.InnerString(), heredoc.Doc(`
+		[ ] Foo
+		[X] Baz
+		[ ] Qux
+		[ ] Bar
+	`))
+}

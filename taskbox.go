@@ -184,15 +184,17 @@ func (tb *TaskBox) HandleTaskEvent(ev termbox.Event) {
 		tb.undo.Undo()
 	case ev.Ch == 'r':
 		tb.undo.Redo()
-	case ev.Key == termbox.KeyArrowLeft || ev.Ch == '<':
+	case ev.Key == termbox.KeyArrowLeft || ev.Ch == 'h':
 		tb.MoveLineUp()
-	case ev.Key == termbox.KeyArrowRight || ev.Ch == '>':
+	case ev.Key == termbox.KeyArrowRight || ev.Ch == 'l':
 		tb.MoveLineDown()
-	case ev.Key == termbox.KeyTab || ev.Ch == '~' || ev.Ch == '`':
+	case ev.Key == termbox.KeyCtrlL:
+		tb.MoveLineToBottom()
+	case ev.Ch == 'f':
 		tb.NextFilter()
-	case ev.Key == termbox.KeyCtrlS || ev.Ch == 's':
+	case ev.Key == termbox.KeyCtrlS || ev.Ch == 's' || ev.Ch == 'w':
 		tb.Save(tb.path)
-	case ev.Key == termbox.KeyF1 || ev.Ch == '?' || ev.Ch == 'h':
+	case ev.Ch == '?':
 		help()
 	case ev.Key == termbox.KeyCtrlQ ||
 		ev.Key == termbox.KeyCtrlX ||
@@ -243,4 +245,13 @@ func (tb *TaskBox) MoveLineUp() {
 	tb.SwapLines(index1, index2)
 	tb.calculate()
 	tb.CursorUp()
+}
+
+func (tb *TaskBox) MoveLineToBottom() {
+	if tb.cursor >= len(tb.view)-1 {
+		return
+	}
+	i, _ := tb.SelectedLine()
+	tb.MakeLastLine(i)
+	tb.calculate()
 }
