@@ -207,8 +207,10 @@ func (tb *TaskBox) HandleTaskEvent(ev termbox.Event) {
 
 func (tb *TaskBox) TaskDeleteKey() {
 	i, _ := tb.SelectedLine()
-	tb.DeleteLine(i)
-	tb.calculate()
+	if i >= 0 {
+		tb.DeleteLine(i)
+		tb.calculate()
+	}
 }
 
 func (tb *TaskBox) ToggleTask() {
