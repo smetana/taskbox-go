@@ -13,20 +13,20 @@ func TestParseTask(t *testing.T) {
 		Status:      StatusOpen,
 	})
 
-	isTask, task = ParseTask("[X] bar")
+	isTask, task = ParseTask("[x] bar")
 	assert.Equal(t, task, Task{
 		Description: "bar",
 		Status:      StatusClosed,
 	})
 
-	isTask, task = ParseTask("[X] ")
+	isTask, task = ParseTask("[x] ")
 	assert.True(t, isTask)
 	assert.Equal(t, task, Task{
 		Description: "",
 		Status:      StatusClosed,
 	})
 
-	isTask, task = ParseTask("[X]")
+	isTask, task = ParseTask("[x]")
 	assert.True(t, isTask)
 	assert.Equal(t, task, Task{
 		Description: "",

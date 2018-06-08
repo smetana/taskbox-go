@@ -17,19 +17,19 @@ func TaskBoxWithUndo() *TaskBox {
 func TestUndoUndoAppend(t *testing.T) {
 	tb := TaskBoxWithUndo()
 	tb.AppendLine("[ ] Foo")
-	tb.AppendLine("[X] Bar")
+	tb.AppendLine("[x] Bar")
 	tb.AppendLine("    Baz")
 
 	assert.Equal(t, tb.InnerString(), heredoc.Doc(`
 		[ ] Foo
-		[X] Bar
+		[x] Bar
 		    Baz
 	`))
 
 	tb.undo.Undo()
 	assert.Equal(t, tb.InnerString(), heredoc.Doc(`
 		[ ] Foo
-		[X] Bar
+		[x] Bar
 	`))
 
 	tb.undo.Undo()
@@ -43,8 +43,8 @@ func TestUndoUndoAppend(t *testing.T) {
 
 func TestUndo(t *testing.T) {
 	tb := TaskBoxWithUndo()
-	tb.Lines = []string{"[ ] Foo", "[ ] Bar", "[X] Baz"}
-	tb.InsertLine(2, "[X] Qux")
+	tb.Lines = []string{"[ ] Foo", "[ ] Bar", "[x] Baz"}
+	tb.InsertLine(2, "[x] Qux")
 	tb.InsertLine(1, "## Xyz")
 	tb.DeleteLine(1)
 	tb.InsertLine(1, "FooBar")
@@ -55,8 +55,8 @@ func TestUndo(t *testing.T) {
 		[ ] Foo
 		Bar
 		[ ] Bar
-		[X] Qux
-		[X] Baz
+		[x] Qux
+		[x] Baz
 	`))
 	tb.undo.Undo()
 	assert.Equal(t, tb.InnerString(), heredoc.Doc(`
@@ -64,8 +64,8 @@ func TestUndo(t *testing.T) {
 		Bar
 		Foo
 		[ ] Bar
-		[X] Qux
-		[X] Baz
+		[x] Qux
+		[x] Baz
 	`))
 	tb.undo.Undo()
 	assert.Equal(t, tb.InnerString(), heredoc.Doc(`
@@ -73,51 +73,51 @@ func TestUndo(t *testing.T) {
 		Foo
 		Bar
 		[ ] Bar
-		[X] Qux
-		[X] Baz
+		[x] Qux
+		[x] Baz
 	`))
 	tb.undo.Undo()
 	assert.Equal(t, tb.InnerString(), heredoc.Doc(`
 		[ ] Foo
 		FooBar
 		[ ] Bar
-		[X] Qux
-		[X] Baz
+		[x] Qux
+		[x] Baz
 	`))
 	tb.undo.Undo()
 	assert.Equal(t, tb.InnerString(), heredoc.Doc(`
 		[ ] Foo
 		[ ] Bar
-		[X] Qux
-		[X] Baz
+		[x] Qux
+		[x] Baz
 	`))
 	tb.undo.Undo()
 	assert.Equal(t, tb.InnerString(), heredoc.Doc(`
 		[ ] Foo
 		## Xyz
 		[ ] Bar
-		[X] Qux
-		[X] Baz
+		[x] Qux
+		[x] Baz
 	`))
 	tb.undo.Undo()
 	assert.Equal(t, tb.InnerString(), heredoc.Doc(`
 		[ ] Foo
 		[ ] Bar
-		[X] Qux
-		[X] Baz
+		[x] Qux
+		[x] Baz
 	`))
 	tb.undo.Undo()
 	assert.Equal(t, tb.InnerString(), heredoc.Doc(`
 		[ ] Foo
 		[ ] Bar
-		[X] Baz
+		[x] Baz
 	`))
 	tb.undo.Undo()
 	tb.undo.Undo()
 	assert.Equal(t, tb.InnerString(), heredoc.Doc(`
 		[ ] Foo
 		[ ] Bar
-		[X] Baz
+		[x] Baz
 	`))
 }
 
@@ -126,11 +126,11 @@ func TestClearUndoOnLoad(t *testing.T) {
 	defer os.Remove(file.Name())
 
 	tb1 := TaskBoxWithUndo()
-	tb1.Lines = []string{"[ ] Foo", "[ ] Bar", "[X] Baz"}
+	tb1.Lines = []string{"[ ] Foo", "[ ] Bar", "[x] Baz"}
 	assert.Equal(t, tb1.InnerString(), heredoc.Doc(`
 		[ ] Foo
 		[ ] Bar
-		[X] Baz
+		[x] Baz
 	`))
 	tb1.Save(file.Name())
 
@@ -144,14 +144,14 @@ func TestClearUndoOnLoad(t *testing.T) {
 	assert.Equal(t, tb2.InnerString(), heredoc.Doc(`
 		[ ] Foo
 		[ ] Bar
-		[X] Baz
+		[x] Baz
 	`))
 }
 
 func TestRedo(t *testing.T) {
 	tb := TaskBoxWithUndo()
-	tb.Lines = []string{"[ ] Foo", "[ ] Bar", "[X] Baz"}
-	tb.InsertLine(2, "[X] Qux")
+	tb.Lines = []string{"[ ] Foo", "[ ] Bar", "[x] Baz"}
+	tb.InsertLine(2, "[x] Qux")
 	tb.InsertLine(1, "## Xyz")
 	tb.DeleteLine(1)
 	tb.InsertLine(1, "FooBar")
@@ -170,29 +170,29 @@ func TestRedo(t *testing.T) {
 	assert.Equal(t, tb.InnerString(), heredoc.Doc(`
 		[ ] Foo
 		[ ] Bar
-		[X] Baz
+		[x] Baz
 	`))
 	tb.undo.Redo()
 	assert.Equal(t, tb.InnerString(), heredoc.Doc(`
 		[ ] Foo
 		[ ] Bar
-		[X] Qux
-		[X] Baz
+		[x] Qux
+		[x] Baz
 	`))
 	tb.undo.Redo()
 	assert.Equal(t, tb.InnerString(), heredoc.Doc(`
 		[ ] Foo
 		## Xyz
 		[ ] Bar
-		[X] Qux
-		[X] Baz
+		[x] Qux
+		[x] Baz
 	`))
 	tb.undo.Redo()
 	assert.Equal(t, tb.InnerString(), heredoc.Doc(`
 		[ ] Foo
 		[ ] Bar
-		[X] Qux
-		[X] Baz
+		[x] Qux
+		[x] Baz
 	`))
 	// Clears Redo
 	tb.InsertLine(1, "FooBar")
@@ -200,16 +200,16 @@ func TestRedo(t *testing.T) {
 		[ ] Foo
 		FooBar
 		[ ] Bar
-		[X] Qux
-		[X] Baz
+		[x] Qux
+		[x] Baz
 	`))
 	tb.undo.Redo()
 	assert.Equal(t, tb.InnerString(), heredoc.Doc(`
 		[ ] Foo
 		FooBar
 		[ ] Bar
-		[X] Qux
-		[X] Baz
+		[x] Qux
+		[x] Baz
 	`))
 	tb.undo.Undo()
 	tb.undo.Undo()
@@ -217,8 +217,8 @@ func TestRedo(t *testing.T) {
 		[ ] Foo
 		## Xyz
 		[ ] Bar
-		[X] Qux
-		[X] Baz
+		[x] Qux
+		[x] Baz
 	`))
 	tb.undo.Redo()
 	tb.undo.Redo()
@@ -227,7 +227,7 @@ func TestRedo(t *testing.T) {
 		[ ] Foo
 		FooBar
 		[ ] Bar
-		[X] Qux
-		[X] Baz
+		[x] Qux
+		[x] Baz
 	`))
 }

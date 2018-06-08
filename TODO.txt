@@ -1,8 +1,8 @@
 Todos:
 
-[X] README/help
-[X] undo/redo
-[X] autosave
+[x] README/help
+[x] undo/redo
+[x] autosave
 [ ] due dates
 [ ] recurring tasks
 [ ] complex filters

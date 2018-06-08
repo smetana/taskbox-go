@@ -12,38 +12,38 @@ func TestInnerString(t *testing.T) {
 	tb := TaskBox{}
 	assert.Equal(t, tb.InnerString(), "\n")
 
-	tb = TaskBox{Lines: []string{"Foo", "[ ] Bar", "[X] Baz"}}
+	tb = TaskBox{Lines: []string{"Foo", "[ ] Bar", "[x] Baz"}}
 	assert.Equal(t, tb.InnerString(), heredoc.Doc(`
 		Foo
 		[ ] Bar
-		[X] Baz
+		[x] Baz
 	`))
 }
 
 func TestAppendLine(t *testing.T) {
 	tb := TaskBox{}
 	tb.AppendLine("[ ] Foo")
-	tb.AppendLine("[X] Bar")
+	tb.AppendLine("[x] Bar")
 	tb.AppendLine("    Baz")
 
 	assert.Equal(t, tb.InnerString(), heredoc.Doc(`
 		[ ] Foo
-		[X] Bar
+		[x] Bar
 		    Baz
 	`))
 }
 
 func TestInsertLine(t *testing.T) {
-	tb := TaskBox{Lines: []string{"[ ] Foo", "[ ] Bar", "[X] Baz"}}
+	tb := TaskBox{Lines: []string{"[ ] Foo", "[ ] Bar", "[x] Baz"}}
 
-	tb.InsertLine(2, "[X] Qux")
+	tb.InsertLine(2, "[x] Qux")
 	tb.InsertLine(1, "## Xyz")
 	assert.Equal(t, tb.InnerString(), heredoc.Doc(`
 		[ ] Foo
 		## Xyz
 		[ ] Bar
-		[X] Qux
-		[X] Baz
+		[x] Qux
+		[x] Baz
 	`))
 }
 
@@ -51,11 +51,11 @@ func TestSaveLoad(t *testing.T) {
 	file, _ := ioutil.TempFile("", "tasks.txt")
 	defer os.Remove(file.Name())
 
-	tb1 := TaskBox{Lines: []string{"[ ] Foo", "[ ] Bar", "[X] Baz"}}
+	tb1 := TaskBox{Lines: []string{"[ ] Foo", "[ ] Bar", "[x] Baz"}}
 	assert.Equal(t, tb1.InnerString(), heredoc.Doc(`
 		[ ] Foo
 		[ ] Bar
-		[X] Baz
+		[x] Baz
 	`))
 	tb1.Save(file.Name())
 	assert.Equal(t, tb1.path, file.Name())
@@ -66,33 +66,33 @@ func TestSaveLoad(t *testing.T) {
 	assert.Equal(t, tb2.InnerString(), heredoc.Doc(`
 		[ ] Foo
 		[ ] Bar
-		[X] Baz
+		[x] Baz
 	`))
 	assert.Equal(t, tb2.path, file.Name())
 }
 
 func TestDeleteLine(t *testing.T) {
-	tb := TaskBox{Lines: []string{"[ ] Foo", "[ ] Bar", "[X] Baz"}}
+	tb := TaskBox{Lines: []string{"[ ] Foo", "[ ] Bar", "[x] Baz"}}
 	line := tb.DeleteLine(1)
 	assert.Equal(t, tb.InnerString(), heredoc.Doc(`
 		[ ] Foo
-		[X] Baz
+		[x] Baz
 	`))
 	assert.Equal(t, line, "[ ] Bar")
 }
 
 func TestSwapLines(t *testing.T) {
-	tb := TaskBox{Lines: []string{"[ ] Foo", "[ ] Bar", "[X] Baz"}}
+	tb := TaskBox{Lines: []string{"[ ] Foo", "[ ] Bar", "[x] Baz"}}
 	tb.SwapLines(0, 2)
 	assert.Equal(t, tb.InnerString(), heredoc.Doc(`
-		[X] Baz
+		[x] Baz
 		[ ] Bar
 		[ ] Foo
 	`))
 	tb.SwapLines(1, 0)
 	assert.Equal(t, tb.InnerString(), heredoc.Doc(`
 		[ ] Bar
-		[X] Baz
+		[x] Baz
 		[ ] Foo
 	`))
 }
@@ -123,42 +123,42 @@ func TestSplitLines(t *testing.T) {
 }
 
 func TestSplitFiltered(t *testing.T) {
-	tb := TaskBox{Lines: []string{"[X] FooBar", "[ ] FooBaz"}}
+	tb := TaskBox{Lines: []string{"[x] FooBar", "[ ] FooBaz"}}
 	tb.Filter(StatusClosed)
 	tb.SplitLine(0, 7)
 	assert.Equal(t, tb.InnerString(), heredoc.Doc(`
-		[X] Foo
-		[X] Bar
+		[x] Foo
+		[x] Bar
 		[ ] FooBaz
 	`))
 	tb.SplitLine(2, 7)
 	assert.Equal(t, tb.InnerString(), heredoc.Doc(`
-		[X] Foo
-		[X] Bar
+		[x] Foo
+		[x] Bar
 		[ ] Foo
-		[X] Baz
+		[x] Baz
 	`))
 }
 
 func TestMakeLastLine(t *testing.T) {
-	tb := TaskBox{Lines: []string{"[ ] Foo", "[ ] Bar", "[X] Baz", "[ ] Qux"}}
+	tb := TaskBox{Lines: []string{"[ ] Foo", "[ ] Bar", "[x] Baz", "[ ] Qux"}}
 	assert.Equal(t, tb.InnerString(), heredoc.Doc(`
 		[ ] Foo
 		[ ] Bar
-		[X] Baz
+		[x] Baz
 		[ ] Qux
 	`))
 	tb.MakeLastLine(1)
 	assert.Equal(t, tb.InnerString(), heredoc.Doc(`
 		[ ] Foo
-		[X] Baz
+		[x] Baz
 		[ ] Qux
 		[ ] Bar
 	`))
 	tb.MakeLastLine(3)
 	assert.Equal(t, tb.InnerString(), heredoc.Doc(`
 		[ ] Foo
-		[X] Baz
+		[x] Baz
 		[ ] Qux
 		[ ] Bar
 	`))

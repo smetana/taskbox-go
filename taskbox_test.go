@@ -212,29 +212,29 @@ func TestMoveLineUp(t *testing.T) {
 }
 
 func TestToggle(t *testing.T) {
-	tb := &TaskBox{Lines: []string{"Foo", "[ ] Bar", "[X] Baz"}}
+	tb := &TaskBox{Lines: []string{"Foo", "[ ] Bar", "[x] Baz"}}
 	tb.Filter(StatusAll)
 	tb.calculate()
 	tb.h = 3
 	assert.Equal(t, tb.String(), heredoc.Doc(`
 		> Foo
 		  [ ] Bar
-		  [X] Baz
+		  [x] Baz
 	`))
 
 	tb.CursorDown()
 	tb.ToggleTask()
 	assert.Equal(t, tb.String(), heredoc.Doc(`
 		  Foo
-		> [X] Bar
-		  [X] Baz
+		> [x] Bar
+		  [x] Baz
 	`))
 
 	tb.CursorDown()
 	tb.ToggleTask()
 	assert.Equal(t, tb.String(), heredoc.Doc(`
 		  Foo
-		  [X] Bar
+		  [x] Bar
 		> [ ] Baz
 	`))
 }
@@ -267,14 +267,14 @@ func TestToggleAndFilterOut(t *testing.T) {
 	tb.calculate()
 	tb.h = 3
 	assert.Equal(t, tb.String(), heredoc.Doc(`
-		> [X] Bar
-		  [X] Baz
+		> [x] Bar
+		  [x] Baz
 	`))
 
 	tb.CursorDown()
 	tb.ToggleTask()
 	assert.Equal(t, tb.String(), heredoc.Doc(`
-		> [X] Bar
+		> [x] Bar
 	`))
 
 	tb.ToggleTask()

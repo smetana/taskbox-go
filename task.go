@@ -11,7 +11,7 @@ type Status rune
 const (
 	StatusAll    Status = 0
 	StatusOpen          = ' '
-	StatusClosed        = 'X'
+	StatusClosed        = 'x'
 )
 
 var statusToString = map[Status]string{
