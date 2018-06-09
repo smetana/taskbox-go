@@ -7,23 +7,49 @@ import (
 	"strings"
 )
 
-type Mode int
+type mode int
 
 const (
-	modeTask Mode = iota
+	modeTask mode = iota
 	modeEdit
+	modeArchive
 	modeExit
 )
 
-func (m Mode) String() string {
-	return map[Mode]string{
-		modeTask: "Task",
-		modeEdit: "Edit",
+func (m mode) String() string {
+	return map[mode]string{
+		modeTask:    "Task",
+		modeEdit:    "Edit",
+		modeArchive: "Archive",
 	}[m]
 }
 
+type lineType int
+
+const (
+	lineTask lineType = iota
+	lineNormal
+	lineComment
+)
+
+func lineTypeOf(s string) lineType {
+	r := []rune(s)
+	switch {
+	case len(r) >= 3 &&
+		r[0] == '[' &&
+		r[2] == ']' &&
+		(r[1] == StatusOpen || r[1] == StatusClosed):
+		return lineTask
+	case len(r) >= 7 &&
+		string(r[0:4]) == CommentPrefix &&
+		string(r[len(r)-3:]) == CommentSuffix:
+		return lineComment
+	}
+	return lineNormal
+}
+
 type TaskBox struct {
-	mode     Mode
+	mode     mode
 	Lines    []string
 	path     string
 	modified bool
@@ -41,8 +67,7 @@ type TaskBox struct {
 func (tb *TaskBox) calculate() {
 	tb.view = make([]int, 0)
 	for i, line := range tb.Lines {
-		isTask, t := ParseTask(line)
-		if !isTask || t.Status == tb.filter || tb.filter == StatusAll {
+		if tb.inFilter(line) {
 			tb.view = append(tb.view, i)
 		}
 	}
@@ -51,6 +76,20 @@ func (tb *TaskBox) calculate() {
 	} else if tb.cursor >= len(tb.view) {
 		tb.cursor = len(tb.view) - 1
 	}
+}
+
+func (tb *TaskBox) inFilter(s string) bool {
+	switch lineTypeOf(s) {
+	case lineComment:
+		return tb.mode == modeArchive
+	case lineTask:
+		t := ParseTask(s)
+		return tb.mode != modeArchive &&
+			(tb.filter == StatusAll || tb.filter == t.Status)
+	case lineNormal:
+		return tb.mode != modeArchive
+	}
+	return false
 }
 
 func (tb *TaskBox) Filter(s Status) {
@@ -72,6 +111,7 @@ func (tb *TaskBox) NextFilter() {
 			return
 		}
 	}
+	tb.Filter(StatusAll)
 }
 
 func (tb TaskBox) TaskFilterPrefix() string {
@@ -84,7 +124,11 @@ func (tb TaskBox) TaskFilterPrefix() string {
 
 func (tb *TaskBox) String() string {
 	if len(tb.view) == 0 {
-		return "> No tasks. Press Enter to create one\n"
+		if tb.mode == modeArchive {
+			return "> No tasks in Archive. Press Esc to return to Task mode\n"
+		} else {
+			return "> No tasks. Press Enter to create one\n"
+		}
 	}
 	var to int
 	if tb.scroll+tb.h > len(tb.view) {
@@ -94,6 +138,7 @@ func (tb *TaskBox) String() string {
 	}
 
 	var s strings.Builder
+	var l string
 	var cursor rune
 	for i, index := range tb.view[tb.scroll:to] {
 		if i == tb.CursorToPage() {
@@ -101,7 +146,11 @@ func (tb *TaskBox) String() string {
 		} else {
 			cursor = ' '
 		}
-		fmt.Fprintf(&s, "%c %s\n", cursor, tb.Lines[index])
+		l = tb.Lines[index]
+		if tb.mode == modeArchive {
+			l = ParseComment(l)
+		}
+		fmt.Fprintf(&s, "%c %s\n", cursor, l)
 	}
 	return s.String()
 }
@@ -194,6 +243,10 @@ func (tb *TaskBox) HandleTaskEvent(ev termbox.Event) {
 		tb.NextFilter()
 	case ev.Key == termbox.KeyCtrlS || ev.Ch == 's' || ev.Ch == 'w':
 		tb.Save(tb.path)
+	case ev.Ch == 'z':
+		tb.ToggleComment()
+	case ev.Key == termbox.KeyCtrlF:
+		tb.EnterArchiveMode()
 	case ev.Ch == '?':
 		help()
 	case ev.Key == termbox.KeyCtrlQ ||
@@ -207,16 +260,17 @@ func (tb *TaskBox) HandleTaskEvent(ev termbox.Event) {
 
 func (tb *TaskBox) TaskDeleteKey() {
 	i, _ := tb.SelectedLine()
-	if i >= 0 {
-		tb.DeleteLine(i)
-		tb.calculate()
+	if i < 0 {
+		return
 	}
+	tb.DeleteLine(i)
+	tb.calculate()
 }
 
 func (tb *TaskBox) ToggleTask() {
 	i, s := tb.SelectedLine()
-	isTask, task := ParseTask(s)
-	if isTask {
+	if lineTypeOf(s) == lineTask {
+		task := ParseTask(s)
 		if task.Status == StatusOpen {
 			task.Status = StatusClosed
 		} else {
@@ -225,6 +279,20 @@ func (tb *TaskBox) ToggleTask() {
 		tb.UpdateLine(i, task.String())
 		tb.calculate()
 	}
+}
+
+func (tb *TaskBox) ToggleComment() {
+	i, s := tb.SelectedLine()
+	if i < 0 {
+		return
+	}
+	if lineTypeOf(s) == lineComment {
+		s = ParseComment(s)
+	} else {
+		s = MakeComment(s)
+	}
+	tb.UpdateLine(i, s)
+	tb.calculate()
 }
 
 func (tb *TaskBox) MoveLineDown() {

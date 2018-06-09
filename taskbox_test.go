@@ -49,6 +49,33 @@ func TaskBoxFixture(size int) *TaskBox {
 
 // ----------------------------------------------------------------------------
 
+func TestLineTypeOf(t *testing.T) {
+	var pairs = []struct {
+		s string
+		t lineType
+	}{
+		{"[x", lineNormal},
+		{"  baz  ", lineNormal},
+		{"", lineNormal},
+		{"[ ] foo", lineTask},
+		{"[x] foo", lineTask},
+		{"[x] ", lineTask},
+		{"[x]", lineTask},
+		{"[@] foo", lineNormal},
+		{"<!-- Foo -->", lineComment},
+		{"<!-- Foo-->", lineComment},
+		{"<!--Foo -->", lineComment},
+		{"<!---->", lineComment},
+		{"<!--->", lineNormal},
+	}
+	for _, p := range pairs {
+		lt := lineTypeOf(p.s)
+		if lt != p.t {
+			t.Errorf("wrong type for %s got %d, want %d", p.s, lt, p.t)
+		}
+	}
+}
+
 func TestNewTaskBox(t *testing.T) {
 	tb := &TaskBox{}
 	assert.Equal(t, tb.cursor, 0)

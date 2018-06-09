@@ -18,15 +18,17 @@ func help() {
 		{"k,Up", "Cursor Up"},
 		{"j,Down", "Cursor Down"},
 		{"Enter", "Enter Edit Mode"},
-		{"Esc", "Exit Edit Mode"},
+		{"Esc", "Back to Task Mode"},
 		{"Tab", "Insert Task Prefix \"[ ]\" (in Edit Mode)"},
-		{"i,Ins", "Insert Task/Line"},
-		{"d,Del", "Delete Task/Line"},
-		{"Space", "Toggle Task"},
-		{"h,Left", "Move Task/Line Up"},
-		{"l,Right", "Move Task/Line Down"},
-		{"Ctrl+l", "Move Task/Line to the Bottom"},
+		{"i,Ins", "Insert Line"},
+		{"d,Del", "Delete Line"},
+		{"Space", "Toggle Status"},
+		{"h,Left", "Move Line Up"},
+		{"l,Right", "Move Line Down"},
+		{"Ctrl+l", "Move Line to the Bottom"},
+		{"z", "Archive/Unarchive Line"},
 		{"f", "Change Filter"},
+		{"Ctrl+f", "Show Archive"},
 		{"u", "Undo"},
 		{"r", "Redo"},
 		{"?", "Help"},
@@ -76,7 +78,9 @@ func (tb *TaskBox) renderStatusLine() {
 	w, h := termbox.Size()
 	var s strings.Builder
 	fmt.Fprintf(&s, " Mode:%s", tb.mode.String())
-	fmt.Fprintf(&s, "; Filter:%s", tb.filter.String())
+	if tb.mode != modeArchive {
+		fmt.Fprintf(&s, "; Filter:%s", tb.filter.String())
+	}
 	if autosaveInterval > 0 {
 		fmt.Fprintf(&s, "; Autosave:%.0fm", autosaveInterval.Minutes())
 	}
@@ -104,6 +108,8 @@ func (tb *TaskBox) mainLoop() {
 			tb.HandleTaskEvent(ev)
 		case modeEdit:
 			tb.HandleEditEvent(ev)
+		case modeArchive:
+			tb.HandleArchiveEvent(ev)
 		}
 		if tb.mode == modeExit && tb.modified {
 			yes, ev := confirm("Save " + tb.path)

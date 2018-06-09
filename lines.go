@@ -78,7 +78,7 @@ func (tb *TaskBox) SplitLine(i, pos int) int {
 	runes := []rune(tb.Lines[i])
 	right := string(runes[pos:])
 	tb.UpdateLine(i, string(runes[0:pos]))
-	if IsTask(tb.Lines[i]) {
+	if lineTypeOf(tb.Lines[i]) == lineTask {
 		right = tb.TaskFilterPrefix() + right
 	}
 	i++

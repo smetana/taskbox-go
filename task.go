@@ -42,23 +42,16 @@ func (task *Task) String() string {
 	return fmt.Sprintf("[%c] %s", task.Status, task.Description)
 }
 
-func IsTask(s string) bool {
-	return len(s) >= 3 &&
-		s[0] == '[' &&
-		s[2] == ']' &&
-		(s[1] == StatusOpen || s[1] == StatusClosed)
-}
-
-func ParseTask(s string) (bool, Task) {
-	t := Task{}
-	if IsTask(s) {
-		t.Status = Status(s[1])
-		if len(s) > 4 {
-			t.Description = s[4:]
-		} else {
-			t.Description = ""
-		}
-		return true, t
+func ParseTask(s string) Task {
+	if lineTypeOf(s) != lineTask {
+		panic("Not a Task")
 	}
-	return false, t
+	t := Task{}
+	t.Status = Status(s[1])
+	if len(s) > 4 {
+		t.Description = s[4:]
+	} else {
+		t.Description = ""
+	}
+	return t
 }

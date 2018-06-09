@@ -20,10 +20,12 @@ func (tb *TaskBox) EnterEditMode() {
 func (tb *TaskBox) ExitEditMode() {
 	tb.DetachEditor()
 	index, s := tb.SelectedLine()
-	isTask, t := ParseTask(s)
-	if isTask && t.Description == "" {
-		tb.DeleteLine(index)
-		tb.calculate()
+	if lineTypeOf(s) == lineTask {
+		t := ParseTask(s)
+		if t.Description == "" {
+			tb.DeleteLine(index)
+			tb.calculate()
+		}
 	}
 	termbox.HideCursor()
 	tb.mode = modeTask
@@ -53,7 +55,7 @@ func (tb *TaskBox) EditEnterKey() {
 	tb.CursorDown()
 	tb.render()
 	tb.AttachEditor()
-	if IsTask(tb.editor.Text()) {
+	if lineTypeOf(tb.editor.Text()) == lineTask {
 		tb.editor.SetCursor(len(TaskPrefix), 0)
 	} else {
 		tb.editor.SetCursor(0, 0)
@@ -63,7 +65,7 @@ func (tb *TaskBox) EditEnterKey() {
 func (tb *TaskBox) AddTaskPrefix() {
 	pos, _ := tb.editor.GetCursor()
 	if pos == 0 {
-		if IsTask(tb.editor.Text()) {
+		if lineTypeOf(tb.editor.Text()) == lineTask {
 			tb.editor.SetCursor(len(TaskPrefix), 0)
 		} else {
 			tb.editor.SetText(tb.TaskFilterPrefix())
@@ -90,7 +92,7 @@ func (tb *TaskBox) EditBackspaceKey(ev termbox.Event) {
 		tb.editor.SetCursor(len(tb.editor.Text())-len(s), 0)
 	} else {
 		ln := len(TaskPrefix)
-		if pos == ln && IsTask(tb.editor.Text()) {
+		if pos == ln && lineTypeOf(tb.editor.Text()) == lineTask {
 			for i := 0; i < ln; i++ {
 				tb.editor.HandleEvent(ev)
 			}
@@ -104,7 +106,7 @@ func (tb *TaskBox) EditBackspaceKey(ev termbox.Event) {
 func (tb *TaskBox) InsertLineAndEdit() {
 	i, s := tb.SelectedLine()
 	var newLine string
-	if IsTask(s) {
+	if lineTypeOf(s) == lineTask {
 		newLine = tb.TaskFilterPrefix()
 	} else {
 		newLine = ""

@@ -5,43 +5,37 @@ import (
 	"testing"
 )
 
+func TestParseTaskPanics(t *testing.T) {
+	defer func() {
+		if r := recover(); r == nil {
+			t.Errorf("The code did not panic")
+		}
+	}()
+	ParseTask("foo")
+}
+
 func TestParseTask(t *testing.T) {
-	isTask, task := ParseTask("[ ] foo")
-	assert.True(t, isTask)
+	task := ParseTask("[ ] foo")
 	assert.Equal(t, task, Task{
 		Description: "foo",
 		Status:      StatusOpen,
 	})
 
-	isTask, task = ParseTask("[x] bar")
+	task = ParseTask("[x] bar")
 	assert.Equal(t, task, Task{
 		Description: "bar",
 		Status:      StatusClosed,
 	})
 
-	isTask, task = ParseTask("[x] ")
-	assert.True(t, isTask)
+	task = ParseTask("[x] ")
 	assert.Equal(t, task, Task{
 		Description: "",
 		Status:      StatusClosed,
 	})
 
-	isTask, task = ParseTask("[x]")
-	assert.True(t, isTask)
+	task = ParseTask("[x]")
 	assert.Equal(t, task, Task{
 		Description: "",
 		Status:      StatusClosed,
 	})
-
-	isTask, task = ParseTask("[X")
-	assert.False(t, isTask)
-
-	isTask, task = ParseTask("")
-	assert.False(t, isTask)
-
-	isTask, task = ParseTask("  baz  ")
-	assert.False(t, isTask)
-
-	isTask, task = ParseTask("[@] ")
-	assert.False(t, isTask)
 }
