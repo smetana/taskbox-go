@@ -2,9 +2,10 @@ package main
 
 import (
 	"fmt"
+	"strings"
 )
 
-const TaskPrefix string = "[ ] "
+const TaskPrefix string = "- [ ] "
 
 type Status rune
 
@@ -39,17 +40,18 @@ type Task struct {
 }
 
 func (task *Task) String() string {
-	return fmt.Sprintf("[%c] %s", task.Status, task.Description)
+	return fmt.Sprintf("- [%c] %s", task.Status, task.Description)
 }
 
 func ParseTask(s string) Task {
 	if lineTypeOf(s) != lineTask {
-		panic("Not a Task")
+		panic("Not a Task: " + s)
 	}
 	t := Task{}
-	t.Status = Status(s[1])
-	if len(s) > 4 {
-		t.Description = s[4:]
+	i := strings.IndexRune(s, '[') // in bytes!
+	t.Status = Status(s[i+1])
+	if len(s) >= len(TaskPrefix) {
+		t.Description = s[len(TaskPrefix):]
 	} else {
 		t.Description = ""
 	}

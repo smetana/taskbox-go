@@ -33,17 +33,16 @@ const (
 )
 
 func lineTypeOf(s string) lineType {
-	r := []rune(s)
 	switch {
-	case len(r) >= 3 &&
-		r[0] == '[' &&
-		r[2] == ']' &&
-		(r[1] == StatusOpen || r[1] == StatusClosed):
-		return lineTask
-	case len(r) >= 7 &&
-		string(r[0:4]) == CommentPrefix &&
-		string(r[len(r)-3:]) == CommentSuffix:
+	case len(s) >= len(CommentPrefix)+len(CommentSuffix) &&
+		s[0:len(CommentPrefix)] == CommentPrefix &&
+		s[len(s)-len(CommentSuffix):] == CommentSuffix:
 		return lineComment
+	case len(s) >= len(TaskPrefix)-1 &&
+		s[0:3] == "- [" &&
+		s[4:5] == "]" &&
+		(s[3] == StatusOpen || s[3] == StatusClosed):
+		return lineTask
 	}
 	return lineNormal
 }
@@ -117,7 +116,7 @@ func (tb *TaskBox) NextFilter() {
 func (tb TaskBox) TaskFilterPrefix() string {
 	s := []rune(TaskPrefix)
 	if tb.filter == StatusClosed {
-		s[1] = StatusClosed
+		s[3] = StatusClosed
 	}
 	return string(s)
 }

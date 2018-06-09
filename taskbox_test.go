@@ -54,14 +54,14 @@ func TestLineTypeOf(t *testing.T) {
 		s string
 		t lineType
 	}{
-		{"[x", lineNormal},
+		{"- [x", lineNormal},
 		{"  baz  ", lineNormal},
 		{"", lineNormal},
-		{"[ ] foo", lineTask},
-		{"[x] foo", lineTask},
-		{"[x] ", lineTask},
-		{"[x]", lineTask},
-		{"[@] foo", lineNormal},
+		{"- [ ] foo", lineTask},
+		{"- [x] foo", lineTask},
+		{"- [x] ", lineTask},
+		{"- [x]", lineTask},
+		{"- [@] foo", lineNormal},
 		{"<!-- Foo -->", lineComment},
 		{"<!-- Foo-->", lineComment},
 		{"<!--Foo -->", lineComment},
@@ -239,69 +239,75 @@ func TestMoveLineUp(t *testing.T) {
 }
 
 func TestToggle(t *testing.T) {
-	tb := &TaskBox{Lines: []string{"Foo", "[ ] Bar", "[x] Baz"}}
+	tb := &TaskBox{Lines: []string{
+		"Foo",
+		"- [ ] Bar",
+		"- [x] Baz"}}
 	tb.Filter(StatusAll)
 	tb.calculate()
 	tb.h = 3
 	assert.Equal(t, tb.String(), heredoc.Doc(`
 		> Foo
-		  [ ] Bar
-		  [x] Baz
+		  - [ ] Bar
+		  - [x] Baz
 	`))
 
 	tb.CursorDown()
 	tb.ToggleTask()
 	assert.Equal(t, tb.String(), heredoc.Doc(`
 		  Foo
-		> [x] Bar
-		  [x] Baz
+		> - [x] Bar
+		  - [x] Baz
 	`))
 
 	tb.CursorDown()
 	tb.ToggleTask()
 	assert.Equal(t, tb.String(), heredoc.Doc(`
 		  Foo
-		  [x] Bar
-		> [ ] Baz
+		  - [x] Bar
+		> - [ ] Baz
 	`))
 }
 
 func TestToggleAndFilterOut(t *testing.T) {
-	tb := &TaskBox{Lines: []string{"[ ] Foo", "[ ] Bar", "[ ] Baz"}}
+	tb := &TaskBox{Lines: []string{
+		"- [ ] Foo",
+		"- [ ] Bar",
+		"- [ ] Baz"}}
 	tb.Filter(StatusOpen)
 	tb.calculate()
 	tb.h = 3
 	assert.Equal(t, tb.String(), heredoc.Doc(`
-		> [ ] Foo
-		  [ ] Bar
-		  [ ] Baz
+		> - [ ] Foo
+		  - [ ] Bar
+		  - [ ] Baz
 	`))
 
 	tb.CursorDown()
 	tb.ToggleTask()
 	assert.Equal(t, tb.String(), heredoc.Doc(`
-		  [ ] Foo
-		> [ ] Baz
+		  - [ ] Foo
+		> - [ ] Baz
 	`))
 
 	tb.CursorDown()
 	tb.ToggleTask()
 	assert.Equal(t, tb.String(), heredoc.Doc(`
-		> [ ] Foo
+		> - [ ] Foo
 	`))
 
 	tb.Filter(StatusClosed)
 	tb.calculate()
 	tb.h = 3
 	assert.Equal(t, tb.String(), heredoc.Doc(`
-		> [x] Bar
-		  [x] Baz
+		> - [x] Bar
+		  - [x] Baz
 	`))
 
 	tb.CursorDown()
 	tb.ToggleTask()
 	assert.Equal(t, tb.String(), heredoc.Doc(`
-		> [x] Bar
+		> - [x] Bar
 	`))
 
 	tb.ToggleTask()

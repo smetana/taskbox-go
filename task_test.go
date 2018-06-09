@@ -15,25 +15,25 @@ func TestParseTaskPanics(t *testing.T) {
 }
 
 func TestParseTask(t *testing.T) {
-	task := ParseTask("[ ] foo")
+	task := ParseTask("- [ ] foo")
 	assert.Equal(t, task, Task{
 		Description: "foo",
 		Status:      StatusOpen,
 	})
 
-	task = ParseTask("[x] bar")
+	task = ParseTask("- [x] bar")
 	assert.Equal(t, task, Task{
 		Description: "bar",
 		Status:      StatusClosed,
 	})
 
-	task = ParseTask("[x] ")
+	task = ParseTask("- [x] ")
 	assert.Equal(t, task, Task{
 		Description: "",
 		Status:      StatusClosed,
 	})
 
-	task = ParseTask("[x]")
+	task = ParseTask("- [x]")
 	assert.Equal(t, task, Task{
 		Description: "",
 		Status:      StatusClosed,

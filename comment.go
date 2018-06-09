@@ -14,8 +14,7 @@ func ParseComment(s string) string {
 	if lineTypeOf(s) != lineComment {
 		panic(fmt.Sprintf("Not a comment: %s", s))
 	}
-	r := []rune(s)
-	return strings.TrimSpace(string(r[4 : len(r)-3]))
+	return strings.TrimSpace(s[len(CommentPrefix) : len(s)-len(CommentSuffix)])
 }
 
 func MakeComment(s string) string {
