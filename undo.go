@@ -7,8 +7,6 @@ const (
 	ActionDelete
 	ActionUpdate
 	ActionSwap
-	ActionCursor
-	ActionFilter
 )
 
 type Change struct {
