@@ -8,12 +8,6 @@ import (
 	"testing"
 )
 
-func TaskBoxWithUndo() *TaskBox {
-	tb := &TaskBox{}
-	tb.undo = NewUndo(tb)
-	return tb
-}
-
 func TestUndoUndoAppend(t *testing.T) {
 	tb := TaskBoxWithUndo()
 	tb.AppendLine("[ ] Foo")

@@ -47,6 +47,12 @@ func TaskBoxFixture(size int) *TaskBox {
 	return tb
 }
 
+func TaskBoxWithUndo() *TaskBox {
+	tb := &TaskBox{}
+	tb.undo = NewUndo(tb)
+	return tb
+}
+
 // ----------------------------------------------------------------------------
 
 func TestLineTypeOf(t *testing.T) {
