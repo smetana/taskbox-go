@@ -10,11 +10,13 @@ I surrender to find perfect (for me) task manager. I practice in Go.
 ## Features
 
   * TUI
-  * uses plain text files in human readable,
-    [github friendly](https://help.github.com/articles/about-task-lists/) format
+  * uses plain text files in [github friendly](https://help.github.com/articles/about-task-lists/)
+    markdown format (see [TODO.md](TODO.md))
+  * does not require any libs
   * unlimited undo/redo
+  * archive
   * autosave
-  * does not require any libs (except Go dependencies)
+
 
 ## Screenshot
 

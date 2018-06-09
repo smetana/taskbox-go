@@ -1,19 +1,20 @@
-Todos:
+## Todo:
 
 [x] README/help
 [x] undo/redo
 [x] autosave
+<!-- [x] archive -->
 [ ] due dates
 [ ] recurring tasks
 [ ] complex filters
 
-Maybe:
+## Maybe:
 
 [ ] task details (hidden descriptions)
 [ ] task history
 [ ] time tracking
 
-Fancy Work:
+## Fancy Work:
 
 [ ] tags
 [ ] color schemes
