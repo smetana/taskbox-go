@@ -168,3 +168,48 @@ func TestMakeLastLine(t *testing.T) {
 		- [ ] Bar
 	`))
 }
+
+func TestSaveLoadComments(t *testing.T) {
+	file, _ := ioutil.TempFile("", "tasks.txt")
+	defer os.Remove(file.Name())
+
+	s := heredoc.Doc(`
+		- [ ] Foo
+		- [ ] Bar
+		<!-- - [x] Baz -->
+		- [x] Qux
+		<!--
+		- [ ] Quux
+		- [ ] FooBar
+		-->
+	`)
+	f, _ := os.Create(file.Name())
+	ioutil.WriteFile(file.Name(), []byte(s), 0644)
+	f.Close()
+
+	tb := TaskBox{}
+	tb.Load(file.Name())
+
+	assert.Equal(t, tb.InnerString(), heredoc.Doc(`
+		- [ ] Foo
+		- [ ] Bar
+		<!-- - [x] Baz -->
+		- [x] Qux
+		<!-- - [ ] Quux -->
+		<!-- - [ ] FooBar -->
+	`))
+
+	tb.Save(tb.path)
+
+	b, _ := ioutil.ReadFile(file.Name())
+	assert.Equal(t, string(b), heredoc.Doc(`
+		- [ ] Foo
+		- [ ] Bar
+		- [x] Qux
+		<!--
+		- [x] Baz
+		- [ ] Quux
+		- [ ] FooBar
+		-->
+	`))
+}

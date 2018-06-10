@@ -3,7 +3,6 @@
 - [x] README/help
 - [x] undo/redo
 - [x] autosave
-<!-- - [x] archive -->
 - [ ] due dates
 - [ ] recurring tasks
 - [ ] complex filters
@@ -18,3 +17,6 @@
 
 - [ ] tags
 - [ ] color schemes
+<!--
+- [x] archive
+-->

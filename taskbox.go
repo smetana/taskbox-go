@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/nsf/termbox-go"
 	"github.com/smetana/editbox-go"
+	"regexp"
 	"strings"
 )
 
@@ -30,18 +31,26 @@ const (
 	lineTask lineType = iota
 	lineNormal
 	lineComment
+	lineCommentOpen
+	lineCommentClose
+)
+
+var (
+	reTask         = *regexp.MustCompile(`^\- \[( |x)\]`)
+	reComment      = *regexp.MustCompile(`^<!\-\-.*\-\->$`)
+	reCommentOpen  = *regexp.MustCompile(`^\s*<!\-\-\s*$`)
+	reCommentClose = *regexp.MustCompile(`^\s*\-\->\s*$`)
 )
 
 func lineTypeOf(s string) lineType {
 	switch {
-	case len(s) >= len(CommentPrefix)+len(CommentSuffix) &&
-		s[0:len(CommentPrefix)] == CommentPrefix &&
-		s[len(s)-len(CommentSuffix):] == CommentSuffix:
+	case reCommentOpen.MatchString(s):
+		return lineCommentOpen
+	case reCommentClose.MatchString(s):
+		return lineCommentClose
+	case reComment.MatchString(s):
 		return lineComment
-	case len(s) >= len(TaskPrefix)-1 &&
-		s[0:3] == "- [" &&
-		s[4:5] == "]" &&
-		(s[3] == StatusOpen || s[3] == StatusClosed):
+	case reTask.MatchString(s):
 		return lineTask
 	}
 	return lineNormal

@@ -2,7 +2,6 @@ package main
 
 import (
 	"bufio"
-	"io/ioutil"
 	"os"
 	"strings"
 )
@@ -95,6 +94,24 @@ func (tb *TaskBox) MakeLastLine(i int) {
 	tb.AppendLine(line)
 }
 
+/*
+We store archived tasks in multiline comment
+On load we transform all these lines to separate
+comment lines to make it easier to work with. e.g:
+
+	foo
+	<!--
+	bar
+	baz
+	-->
+
+will be transformed to
+
+	foo
+	<!-- bar -->
+	<!-- baz -->
+
+*/
 func (tb *TaskBox) Load(path string) {
 	tb.path = path
 	tb.Lines = make([]string, 0)
@@ -109,9 +126,23 @@ func (tb *TaskBox) Load(path string) {
 
 	hasUndo := (tb.undo != nil)
 	tb.undo = nil // Disable Undo
+	cmtBlck := false
 	scanner := bufio.NewScanner(f)
 	for scanner.Scan() {
-		tb.AppendLine(scanner.Text())
+		s := scanner.Text()
+		switch {
+		case lineTypeOf(s) == lineCommentOpen:
+			cmtBlck = true
+			continue
+		case lineTypeOf(s) == lineCommentClose:
+			cmtBlck = false
+			continue
+		case cmtBlck:
+			s = MakeComment(s)
+		default:
+			// use line as is
+		}
+		tb.AppendLine(s)
 	}
 	check(scanner.Err())
 	tb.calculate()
@@ -121,12 +152,52 @@ func (tb *TaskBox) Load(path string) {
 	}
 }
 
+/*
+On save we collect all commented out lines to one multiline comment
+and save it at the end of the file
+
+	foo
+	<!-- bar -->
+	baz
+	<!-- qux -->
+
+will be transformed to
+
+	foo
+	baz
+	<!--
+	bar
+	qux
+	-->
+*/
+
 func (tb *TaskBox) Save(path string) {
+	var comments []string
+	var err error
+
 	tb.path = path
 	f, err := os.Create(path)
 	check(err)
 	defer f.Close()
-	err = ioutil.WriteFile(path, []byte(tb.InnerString()), 0644)
-	check(err)
+
+	w := bufio.NewWriter(f)
+	for _, s := range tb.Lines {
+		if lineTypeOf(s) == lineComment {
+			// collect comments to write the at the end
+			comments = append(comments, ParseComment(s))
+		} else {
+			w.WriteString(s)
+			w.WriteRune('\n')
+		}
+	}
+	if len(comments) > 0 {
+		w.WriteString("<!--\n")
+		for _, s := range comments {
+			w.WriteString(s)
+			w.WriteRune('\n')
+		}
+		w.WriteString("-->\n")
+	}
+	w.Flush()
 	tb.modified = false
 }
