@@ -26,6 +26,7 @@ func help() {
 		{"h,Left", "Move Line Up"},
 		{"l,Right", "Move Line Down"},
 		{"Ctrl+l", "Move Line to the Bottom"},
+		{"c", "Insert copy of the Line"},
 		{"z", "Archive/Unarchive Line"},
 		{"f", "Change Filter"},
 		{"Ctrl+f", "Show Archive"},

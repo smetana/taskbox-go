@@ -23,6 +23,8 @@ func (tb *TaskBox) HandleArchiveEvent(ev termbox.Event) {
 		tb.PageUp()
 	case ev.Ch == 'z':
 		tb.ToggleComment()
+	case ev.Ch == 'c':
+		tb.CopyLine()
 	case ev.Ch == 'u':
 		tb.undo.Undo()
 	case ev.Ch == 'r':

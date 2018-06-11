@@ -245,6 +245,8 @@ func (tb *TaskBox) HandleTaskEvent(ev termbox.Event) {
 		tb.MoveLineUp()
 	case ev.Key == termbox.KeyArrowRight || ev.Ch == 'l':
 		tb.MoveLineDown()
+	case ev.Ch == 'c':
+		tb.CopyLine()
 	case ev.Key == termbox.KeyCtrlL:
 		tb.MoveLineToBottom()
 	case ev.Ch == 'f':
@@ -331,5 +333,11 @@ func (tb *TaskBox) MoveLineToBottom() {
 	}
 	i, _ := tb.SelectedLine()
 	tb.MakeLastLine(i)
+	tb.calculate()
+}
+
+func (tb *TaskBox) CopyLine() {
+	i, s := tb.SelectedLine()
+	tb.InsertLine(i, s)
 	tb.calculate()
 }
