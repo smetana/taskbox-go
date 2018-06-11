@@ -5,14 +5,16 @@ simple editor and simple task manager.
 
 ## Why?
 
-I surrender to find perfect (for me) task manager. I practice in Go.
+I surrender my search for perfect task manager. I practice in Go.
 
 ## Features
 
   * TUI
-  * store files in [github friendly markdown](TODO.md) format
-  * does not require any libs
-  * unlimited undo/redo
+  * tasklists in [github friendly markdown](TODO.md) format
+  * no database backend
+  * no lib deps
+  * filters
+  * undo/redo
   * archive
   * autosave
 
