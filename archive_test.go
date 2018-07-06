@@ -6,7 +6,7 @@ import (
 	"testing"
 )
 
-func TestAchive(t *testing.T) {
+func TestArchive(t *testing.T) {
 	tb := TaskBoxWithUndo()
 	tb.Lines = []string{
 		"## Foo",
@@ -32,10 +32,13 @@ func TestAchive(t *testing.T) {
 	`))
 	tb.cursor = 2
 	tb.ToggleComment()
+	tb.undo.PutState()
 	tb.cursor = 3
 	tb.ToggleComment()
+	tb.undo.PutState()
 	tb.cursor = 2
 	tb.ToggleComment()
+	tb.undo.PutState()
 	assert.Equal(t, tb.String(), heredoc.Doc(`
 		  ## Foo
 		  - [ ] Foo

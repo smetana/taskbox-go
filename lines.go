@@ -19,20 +19,12 @@ func (tb *TaskBox) InnerString() string {
 
 func (tb *TaskBox) AppendLine(line string) {
 	tb.Lines = append(tb.Lines, line)
-	tb.modified = true
-	if tb.undo != nil {
-		tb.undo.Put(ChangeInsertLine(len(tb.Lines)-1, line))
-	}
 }
 
 func (tb *TaskBox) InsertLine(i int, line string) {
 	tb.Lines = append(tb.Lines, "")
 	copy(tb.Lines[i+1:], tb.Lines[i:])
-	tb.modified = true
 	tb.Lines[i] = line
-	if tb.undo != nil {
-		tb.undo.Put(ChangeInsertLine(i, line))
-	}
 }
 
 func (tb *TaskBox) UpdateLine(i int, newL string) {
@@ -41,10 +33,6 @@ func (tb *TaskBox) UpdateLine(i int, newL string) {
 		return
 	}
 	tb.Lines[i] = newL
-	tb.modified = true
-	if tb.undo != nil {
-		tb.undo.Put(ChangeUpdateLine(i, oldL, newL))
-	}
 }
 
 func (tb *TaskBox) DeleteLine(i int) string {
@@ -52,28 +40,16 @@ func (tb *TaskBox) DeleteLine(i int) string {
 	copy(tb.Lines[i:], tb.Lines[i+1:])
 	tb.Lines[len(tb.Lines)-1] = ""
 	tb.Lines = tb.Lines[:len(tb.Lines)-1]
-	tb.modified = true
-	if tb.undo != nil {
-		tb.undo.Put(ChangeDeleteLine(i, line))
-	}
 	return line
 }
 
 func (tb *TaskBox) SwapLines(i, j int) {
 	tb.Lines[i], tb.Lines[j] = tb.Lines[j], tb.Lines[i]
-	tb.modified = true
-	if tb.undo != nil {
-		tb.undo.Put(ChangeSwapLines(i, j))
-	}
 }
 
 // Split line and copy everything on right to new line below
 // Return new line index
 func (tb *TaskBox) SplitLine(i, pos int) int {
-	if tb.undo != nil {
-		tb.undo.StartChain()
-		defer tb.undo.PutChain()
-	}
 	runes := []rune(tb.Lines[i])
 	right := string(runes[pos:])
 	tb.UpdateLine(i, string(runes[0:pos]))
@@ -86,10 +62,6 @@ func (tb *TaskBox) SplitLine(i, pos int) int {
 }
 
 func (tb *TaskBox) MakeLastLine(i int) {
-	if tb.undo != nil {
-		tb.undo.StartChain()
-		defer tb.undo.PutChain()
-	}
 	line := tb.DeleteLine(i)
 	tb.AppendLine(line)
 }

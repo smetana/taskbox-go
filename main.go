@@ -88,10 +88,11 @@ func (tb *TaskBox) renderStatusLine() {
 	if tb.modified {
 		fmt.Fprintf(&s, "; Modified")
 	} else {
-		if tb.undo.Len > 0 {
-			fmt.Fprintf(&s, "; Saved")
+		if len(tb.undo.history) > 0 {
+			fmt.Fprintf(&s, "; Saved  ")
 		}
 	}
+	fmt.Fprintf(&s, "    %d:%d", tb.undo.stateIndex, len(tb.undo.history))
 	editbox.Label(0, h-1, w, 0, 0, s.String())
 }
 
@@ -104,6 +105,7 @@ func (tb *TaskBox) mainLoop() {
 		if ev.Type == termbox.EventInterrupt {
 			tb.mode = modeExit
 		}
+
 		switch tb.mode {
 		case modeTask:
 			tb.HandleTaskEvent(ev)
@@ -112,6 +114,11 @@ func (tb *TaskBox) mainLoop() {
 		case modeArchive:
 			tb.HandleArchiveEvent(ev)
 		}
+
+		if !(ev.Ch == 'r' || ev.Ch == 'u') {
+			tb.undo.PutState()
+		}
+
 		if tb.mode == modeExit && tb.modified {
 			yes, ev := confirm("Save " + tb.path)
 			if ev.Key == termbox.KeyEsc {

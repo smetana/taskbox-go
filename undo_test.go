@@ -8,43 +8,50 @@ import (
 	"testing"
 )
 
-func TestUndoUndoAppend(t *testing.T) {
+func TestUndoAppend(t *testing.T) {
 	tb := TaskBoxWithUndo()
 	tb.AppendLine("[ ] Foo")
+	tb.undo.PutState()
 	tb.AppendLine("[x] Bar")
+	tb.undo.PutState()
 	tb.AppendLine("    Baz")
-
+	tb.undo.PutState()
 	assert.Equal(t, tb.InnerString(), heredoc.Doc(`
 		[ ] Foo
 		[x] Bar
 		    Baz
 	`))
-
 	tb.undo.Undo()
 	assert.Equal(t, tb.InnerString(), heredoc.Doc(`
 		[ ] Foo
 		[x] Bar
 	`))
-
 	tb.undo.Undo()
 	assert.Equal(t, tb.InnerString(), heredoc.Doc(`
 		[ ] Foo
 	`))
-
 	tb.undo.Undo()
 	assert.Equal(t, tb.InnerString(), "\n")
 }
 
 func TestUndo(t *testing.T) {
-	tb := TaskBoxWithUndo()
-	tb.Lines = []string{"[ ] Foo", "[ ] Bar", "[x] Baz"}
+	tb := &TaskBox{Lines: []string{"[ ] Foo", "[ ] Bar", "[x] Baz"}}
+	tb.undo = NewUndo(tb)
+	tb.undo.PutState()
 	tb.InsertLine(2, "[x] Qux")
+	tb.undo.PutState()
 	tb.InsertLine(1, "## Xyz")
+	tb.undo.PutState()
 	tb.DeleteLine(1)
+	tb.undo.PutState()
 	tb.InsertLine(1, "FooBar")
+	tb.undo.PutState()
 	tb.SplitLine(1, 3)
+	tb.undo.PutState()
 	tb.SwapLines(1, 2)
+	tb.undo.PutState()
 	tb.DeleteLine(2)
+	tb.undo.PutState()
 	assert.Equal(t, tb.InnerString(), heredoc.Doc(`
 		[ ] Foo
 		Bar
@@ -143,15 +150,22 @@ func TestClearUndoOnLoad(t *testing.T) {
 }
 
 func TestRedo(t *testing.T) {
-	tb := TaskBoxWithUndo()
-	tb.Lines = []string{"[ ] Foo", "[ ] Bar", "[x] Baz"}
+	tb := &TaskBox{Lines: []string{"[ ] Foo", "[ ] Bar", "[x] Baz"}}
+	tb.undo = NewUndo(tb)
 	tb.InsertLine(2, "[x] Qux")
+	tb.undo.PutState()
 	tb.InsertLine(1, "## Xyz")
+	tb.undo.PutState()
 	tb.DeleteLine(1)
+	tb.undo.PutState()
 	tb.InsertLine(1, "FooBar")
+	tb.undo.PutState()
 	tb.SplitLine(1, 3)
+	tb.undo.PutState()
 	tb.SwapLines(1, 2)
+	tb.undo.PutState()
 	tb.DeleteLine(2)
+	tb.undo.PutState()
 	tb.undo.Undo()
 	tb.undo.Undo()
 	tb.undo.Undo()
@@ -189,10 +203,11 @@ func TestRedo(t *testing.T) {
 		[x] Baz
 	`))
 	// Clears Redo
-	tb.InsertLine(1, "FooBar")
+	tb.InsertLine(1, "FOOBAR")
+	tb.undo.PutState()
 	assert.Equal(t, tb.InnerString(), heredoc.Doc(`
 		[ ] Foo
-		FooBar
+		FOOBAR
 		[ ] Bar
 		[x] Qux
 		[x] Baz
@@ -200,12 +215,18 @@ func TestRedo(t *testing.T) {
 	tb.undo.Redo()
 	assert.Equal(t, tb.InnerString(), heredoc.Doc(`
 		[ ] Foo
-		FooBar
+		FOOBAR
 		[ ] Bar
 		[x] Qux
 		[x] Baz
 	`))
 	tb.undo.Undo()
+	assert.Equal(t, tb.InnerString(), heredoc.Doc(`
+		[ ] Foo
+		[ ] Bar
+		[x] Qux
+		[x] Baz
+	`))
 	tb.undo.Undo()
 	assert.Equal(t, tb.InnerString(), heredoc.Doc(`
 		[ ] Foo
@@ -219,7 +240,7 @@ func TestRedo(t *testing.T) {
 	tb.undo.Redo()
 	assert.Equal(t, tb.InnerString(), heredoc.Doc(`
 		[ ] Foo
-		FooBar
+		FOOBAR
 		[ ] Bar
 		[x] Qux
 		[x] Baz

@@ -163,13 +163,14 @@ func (tb *TaskBox) HandleEditEvent(ev termbox.Event) {
 		ev.Key == termbox.KeyCtrlC:
 		tb.mode = modeExit
 	default:
-		_, oldL := tb.SelectedLine()
+		index, oldL := tb.SelectedLine()
 		tb.editor.HandleEvent(ev)
 		// TODO Investigate why we need to render editor
 		// to get correct cursor position
 		tb.editor.Render()
 		tb.lastX, _ = tb.editor.GetCursor()
 		if oldL != tb.editor.Text() {
+			tb.UpdateLine(index, tb.editor.Text())
 			tb.modified = true
 		}
 	}
