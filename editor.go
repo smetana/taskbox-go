@@ -29,8 +29,6 @@ func (tb *TaskBox) ExitEditMode() {
 	}
 	termbox.HideCursor()
 	tb.mode = modeTask
-	tb.render()
-	termbox.Flush()
 }
 
 // Attach editor at cursor
@@ -53,7 +51,6 @@ func (tb *TaskBox) EditEnterKey() {
 	tb.SplitLine(i, pos)
 	tb.calculate()
 	tb.CursorDown()
-	tb.render()
 	tb.AttachEditor()
 	if lineTypeOf(tb.editor.Text()) == lineTask {
 		tb.editor.SetCursor(len(TaskPrefix), 0)
@@ -86,7 +83,6 @@ func (tb *TaskBox) EditBackspaceKey(ev termbox.Event) {
 		tb.DeleteLine(i)
 		tb.calculate()
 		tb.CursorUp()
-		tb.render()
 		tb.AttachEditor()
 		tb.editor.SetText(s)
 		tb.editor.SetCursor(len(tb.editor.Text())-len(s), 0)
@@ -113,14 +109,12 @@ func (tb *TaskBox) InsertLineAndEdit() {
 	}
 	tb.InsertLine(i, newLine)
 	tb.calculate()
-	tb.render()
 	tb.EnterEditMode()
 }
 
 func (tb *TaskBox) EditMoveDown() {
 	tb.DetachEditor()
 	tb.CursorDown()
-	tb.render()
 	tb.AttachEditor()
 	tb.editor.SetCursor(tb.lastX, 0)
 }
@@ -128,7 +122,6 @@ func (tb *TaskBox) EditMoveDown() {
 func (tb *TaskBox) EditMoveUp() {
 	tb.DetachEditor()
 	tb.CursorUp()
-	tb.render()
 	tb.AttachEditor()
 	tb.editor.SetCursor(tb.lastX, 0)
 }
@@ -136,7 +129,6 @@ func (tb *TaskBox) EditMoveUp() {
 func (tb *TaskBox) EditMovePageDown() {
 	tb.DetachEditor()
 	tb.PageDown()
-	tb.render()
 	tb.AttachEditor()
 	tb.editor.SetCursor(tb.lastX, 0)
 }
@@ -144,7 +136,6 @@ func (tb *TaskBox) EditMovePageDown() {
 func (tb *TaskBox) EditMovePageUp() {
 	tb.DetachEditor()
 	tb.PageUp()
-	tb.render()
 	tb.AttachEditor()
 	tb.editor.SetCursor(tb.lastX, 0)
 }
@@ -182,9 +173,4 @@ func (tb *TaskBox) HandleEditEvent(ev termbox.Event) {
 			tb.modified = true
 		}
 	}
-	if tb.editor != nil {
-		tb.editor.Render()
-	}
-	tb.renderStatusLine()
-	termbox.Flush()
 }

@@ -120,6 +120,9 @@ func (tb *TaskBox) mainLoop() {
 				tb.Save(tb.path)
 			}
 		}
+
+		tb.calculate()
+		tb.render()
 	}
 }
 

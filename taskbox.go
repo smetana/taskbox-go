@@ -265,7 +265,6 @@ func (tb *TaskBox) HandleTaskEvent(ev termbox.Event) {
 		ev.Ch == 'q':
 		tb.mode = modeExit
 	}
-	tb.render()
 }
 
 func (tb *TaskBox) TaskDeleteKey() {

@@ -39,7 +39,4 @@ func (tb *TaskBox) HandleArchiveEvent(ev termbox.Event) {
 		ev.Ch == 'q':
 		tb.mode = modeExit
 	}
-	tb.calculate()
-	tb.render()
-	termbox.Flush()
 }
